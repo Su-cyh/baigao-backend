@@ -1,0 +1,3070 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+  <meta http-equiv="Pragma" content="no-cache">
+  <meta http-equiv="Expires" content="0">
+  <title>白糕平台</title>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/mammoth/1.6.0/mammoth.browser.min.js"></script>
+  <style>
+    :root {
+      --bg: #FAF6F0;
+      --text: #4A3728;
+      --text-sec: #8B7355;
+      --border: #E8DDD0;
+      --hover: #F0E8DC;
+      --accent: #7A5C42;
+    }
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; background: var(--bg); color: var(--text); line-height: 1.6; }
+    .app-container { display: flex; height: 100vh; }
+    .sidebar { width: 200px; background: #FFF8F0; border-right: 1px solid var(--border); padding: 20px 0; transition: width 0.3s; overflow: hidden; flex-shrink: 0; }
+    .sidebar.collapsed { width: 60px; }
+    .sidebar.collapsed .sidebar-logo { display: none; }
+    .sidebar.collapsed .sidebar-header { justify-content: center; padding: 0 10px 20px; }
+    .sidebar.collapsed .sidebar-toggle { font-size: 22px; }
+    .sidebar-header { padding: 0 16px 20px; border-bottom: 1px solid var(--border); display: flex; align-items: center; justify-content: space-between; }
+    .sidebar-logo { font-size: 18px; font-weight: 700; white-space: nowrap; }
+    .sidebar-toggle { background: none; border: none; cursor: pointer; font-size: 18px; color: var(--text-sec); }
+    .nav-item { padding: 12px 16px; cursor: pointer; display: flex; align-items: center; gap: 10px; white-space: nowrap; }
+    .nav-item:hover { background: var(--hover); }
+    .nav-item.active { background: #F0E8DC; font-weight: 600; }
+    .nav-icon { width: 24px; text-align: center; }
+    .main-content { flex: 1; overflow-y: auto; padding: 30px; }
+    .page { display: none; }
+    .page.active { display: block; }
+    .page-title { font-size: 24px; font-weight: 700; margin-bottom: 20px; }
+    .btn { padding: 8px 16px; border-radius: 6px; border: 1px solid var(--border); background: var(--bg); cursor: pointer; font-size: 14px; }
+    .btn:hover { background: var(--hover); }
+    .btn-primary { background: var(--accent); color: #fff; border-color: var(--accent); }
+    .btn-primary:hover { background: #5C4033; }
+    input[type="text"], input[type="password"], textarea, select { padding: 8px 12px; border: 1px solid var(--border); border-radius: 6px; font-size: 14px; width: 100%; }
+    input:focus, textarea:focus, select:focus { outline: none; border-color: var(--accent); }
+    .card { background: #fff; border: 1px solid var(--border); border-radius: 8px; padding: 20px; margin-bottom: 16px; }
+    .toast { position: fixed; top: 20px; right: 20px; background: var(--accent); color: #fff; padding: 12px 20px; border-radius: 6px; z-index: 10000; animation: slideIn 0.3s; }
+    @keyframes slideIn { from { transform: translateX(100%); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
+    
+    /* === Exam Center === */
+    .exam-tabs { display: flex; gap: 10px; margin-bottom: 20px; border-bottom: 1px solid var(--border); padding-bottom: 10px; }
+    .exam-tab { padding: 8px 16px; cursor: pointer; border-radius: 6px; }
+    .exam-tab.active { background: var(--accent); color: #fff; }
+    .exam-panel { display: none; }
+    .exam-panel.active { display: block; }
+    .upload-zone { border: 2px dashed var(--border); border-radius: 8px; padding: 40px; text-align: center; cursor: pointer; }
+    .upload-zone:hover { border-color: var(--accent); }
+    .question-item { padding: 16px; border: 1px solid var(--border); border-radius: 8px; margin-bottom: 12px; }
+    .q-number { font-weight: 600; margin-bottom: 8px; }
+    .q-option { padding: 8px 12px; margin: 4px 0; border: 1px solid var(--border); border-radius: 6px; cursor: pointer; }
+    .q-option:hover { background: var(--hover); }
+    .q-option.selected { background: #e8f4e8; border-color: #4caf50; }
+    .q-option.correct { background: #c8e6c9; border-color: #4caf50; }
+    .q-option.wrong { background: #ffcdd2; border-color: #f44336; }
+    
+    /* === Live Recording === */
+    @keyframes pulse { 0%,100% { opacity:1; transform:scale(1); } 50% { opacity:0.4; transform:scale(0.8); } }
+    .rec-pulse { animation: pulse 1.2s infinite; }
+    .live-final { color: #e0e0e0; }
+    .live-interim { color: #888; font-style:italic; border-bottom:1px dashed #555; }
+    .live-partial { color: #e0e0e0; }
+    .live-recognizing { color: #f39c12; font-size:13px; animation: pulse 1.2s infinite; }
+    
+    /* === Forum === */
+    .forum-tabs { display: flex; gap: 10px; margin-bottom: 20px; }
+    .forum-tab { padding: 8px 16px; cursor: pointer; border-radius: 6px; background: #F0E8DC; }
+    .forum-tab.active { background: var(--accent); color: #fff; }
+    .forum-anon-bar { padding: 12px; background: #FFF8F0; border-radius: 8px; margin-bottom: 16px; display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+    .anon-tag { background: var(--accent); color: #fff; padding: 2px 10px; border-radius: 12px; font-size: 12px; }
+    .school-bar { display: flex; gap: 8px; overflow-x: auto; padding: 10px 0; margin-bottom: 16px; }
+    .school-badge { display: flex; align-items: center; gap: 6px; padding: 6px 12px; border-radius: 20px; background: #F0E8DC; cursor: pointer; white-space: nowrap; font-size: 13px; }
+    .school-badge.active { background: var(--accent); color: #fff; }
+    .school-icon { width: 24px; height: 24px; border-radius: 50%; display: flex; align-items: center; justify-content: center; color: #fff; font-size: 11px; font-weight: 700; }
+    .forum-post-list { display: grid; gap: 12px; }
+    .forum-post-card { border: 1px solid var(--border); border-radius: 8px; padding: 16px; cursor: pointer; }
+    .forum-post-card:hover { background: var(--hover); }
+    .post-card-header { display: flex; align-items: center; gap: 10px; margin-bottom: 8px; }
+    .post-card-avatar { width: 36px; height: 36px; border-radius: 50%; display: flex; align-items: center; justify-content: center; color: #fff; font-size: 14px; font-weight: 700; }
+    .anon-name { font-size: 13px; color: var(--text-sec); }
+    .post-time { font-size: 12px; color: #999; }
+    .post-card-school { padding: 2px 8px; border-radius: 10px; font-size: 11px; margin-left: auto; }
+    .post-card-title { font-weight: 600; margin-bottom: 4px; }
+    .post-card-preview { color: var(--text-sec); font-size: 14px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .post-card-footer { display: flex; gap: 16px; margin-top: 10px; font-size: 13px; color: var(--text-sec); }
+    .forum-post-detail { display: none; }
+    .forum-post-detail.active { display: block; }
+    .back-btn { cursor: pointer; color: var(--accent); margin-bottom: 16px; }
+    .post-detail-content { margin: 16px 0; line-height: 1.8; }
+    .post-detail-actions { display: flex; gap: 12px; margin: 16px 0; }
+    .action-btn { padding: 6px 14px; border-radius: 20px; background: #F0E8DC; cursor: pointer; font-size: 13px; }
+    .action-btn:hover { background: #E8DDD0; }
+    .action-btn.liked { background: #ffebee; color: #c00; }
+    .reply-section { margin-top: 20px; }
+    .reply-item { display: flex; gap: 10px; padding: 12px 0; border-bottom: 1px solid #E8DDD0; }
+    .reply-avatar { width: 32px; height: 32px; border-radius: 50%; display: flex; align-items: center; justify-content: center; color: #fff; font-size: 12px; font-weight: 700; flex-shrink: 0; }
+    .reply-content { flex: 1; }
+    .reply-name { font-size: 13px; color: var(--text-sec); }
+    .reply-name .reply-time { margin-left: 10px; font-size: 11px; color: #999; }
+    .reply-text { margin-top: 4px; }
+    .reply-input-area { display: flex; gap: 10px; margin-top: 16px; }
+    .reply-input-area input { flex: 1; }
+    .forum-private-chat { display: none; height: calc(100vh - 200px); }
+    .forum-private-chat.active { display: flex; }
+    .chat-contact-list { width: 250px; border-right: 1px solid var(--border); overflow-y: auto; }
+    .chat-contact-item { display: flex; align-items: center; gap: 10px; padding: 12px; cursor: pointer; border-bottom: 1px solid #E8DDD0; }
+    .chat-contact-item:hover { background: var(--hover); }
+    .chat-contact-item.active { background: #F0E8DC; }
+    .chat-contact-avatar { width: 36px; height: 36px; border-radius: 50%; display: flex; align-items: center; justify-content: center; color: #fff; font-size: 14px; font-weight: 700; }
+    .chat-contact-info { flex: 1; min-width: 0; }
+    .chat-contact-name { font-size: 13px; font-weight: 600; }
+    .chat-contact-last { font-size: 12px; color: var(--text-sec); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .chat-window { flex: 1; display: flex; flex-direction: column; }
+    .chat-window-header { padding: 12px 16px; border-bottom: 1px solid var(--border); font-weight: 600; }
+    .chat-window-body { flex: 1; padding: 16px; overflow-y: auto; }
+    .chat-bubble { padding: 8px 12px; border-radius: 12px; margin: 6px 0; max-width: 70%; }
+    .chat-bubble.mine { background: var(--accent); color: #fff; margin-left: auto; }
+    .chat-bubble.other { background: #F0E8DC; }
+    .chat-window-input { display: flex; gap: 10px; padding: 12px 16px; border-top: 1px solid var(--border); }
+    .chat-window-input input { flex: 1; }
+    .forum-fab { position: fixed; bottom: 30px; right: 30px; width: 56px; height: 56px; border-radius: 50%; background: var(--accent); color: #fff; border: none; font-size: 24px; cursor: pointer; box-shadow: 0 2px 10px rgba(0,0,0,0.2); display: none; }
+    .forum-fab.show { display: block; }
+    .modal-overlay { display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.5); z-index: 1000; align-items: center; justify-content: center; }
+    .modal-overlay.show { display: flex; }
+    .modal { background: #fff; border-radius: 12px; padding: 24px; max-width: 500px; width: 90%; max-height: 80vh; overflow-y: auto; }
+    .modal h3 { margin-bottom: 16px; }
+    .modal-actions { display: flex; gap: 10px; justify-content: flex-end; margin-top: 20px; }
+    
+    /* === Audio Recorder === */
+    .audio-upload-card { border: 2px dashed var(--border); border-radius: 8px; padding: 30px; text-align: center; margin: 16px 0; }
+    .audio-upload-zone { cursor: pointer; padding: 20px; }
+    .audio-upload-zone:hover { background: var(--hover); }
+    .audio-player-wrap { margin: 16px 0; display: none; }
+    .audio-transcribe-btn { padding: 10px 20px; border-radius: 6px; background: var(--accent); color: #fff; border: none; cursor: pointer; margin: 4px; }
+    .audio-transcribe-btn:disabled { opacity: 0.5; }
+    .audio-progress { display: none; margin-top: 8px; }
+    .audio-progress-bar { height: 4px; background: #e5e5e5; border-radius: 2px; overflow: hidden; }
+    .audio-progress-bar-fill { height: 100%; background: var(--accent); width: 0%; transition: width 0.3s; }
+    .audio-progress-text { font-size: 11px; color: var(--text-sec); margin-top: 4px; }
+    
+    /* === Friend System === */
+    .friend-requests-bar { padding: 12px 16px; border-bottom: 1px solid #E8DDD0; }
+    .friend-requests-bar h4 { font-size: 13px; color: #666; margin-bottom: 8px; }
+    .friend-request-item { display: flex; align-items: center; gap: 8px; padding: 8px 0; border-bottom: 1px solid #E8DDD0; }
+    .friend-request-item:last-child { border-bottom: none; }
+    .friend-req-avatar { width: 32px; height: 32px; border-radius: 50%; display: flex; align-items: center; justify-content: center; color: #fff; font-size: 13px; font-weight: 700; flex-shrink: 0; }
+    .friend-req-info { flex: 1; min-width: 0; }
+    .friend-req-name { font-size: 13px; font-weight: 600; }
+    .friend-req-time { font-size: 11px; color: #999; }
+    .friend-req-actions { display: flex; gap: 6px; }
+    .friend-req-btn { padding: 4px 10px; border-radius: 12px; border: none; font-size: 12px; cursor: pointer; }
+    .friend-req-btn.accept { background: #000; color: #fff; }
+    .friend-req-btn.reject { background: #F0E8DC; color: #8B7355; }
+    .friend-list-header { padding: 12px 16px 6px; font-size: 12px; color: #999; font-weight: 600; text-transform: uppercase; letter-spacing: 1px; }
+    .chat-contact-item .remove-friend-btn { display: none; position: absolute; right: 8px; top: 50%; transform: translateY(-50%); background: none; border: none; color: #ccc; cursor: pointer; font-size: 14px; }
+    .chat-contact-item:hover .remove-friend-btn { display: block; }
+    .chat-contact-item { position: relative; }
+    .ask-baigao-btn { display: inline-flex; align-items: center; gap: 4px; padding: 6px 12px; border-radius: 16px; background: #FFF8F0; border: 1px solid #E8DDD0; font-size: 12px; cursor: pointer; color: #8B7355; margin-top: 6px; }
+    .ask-baigao-btn:hover { background: #F0E8DC; border-color: #E8DDD0; }
+    .chat-context-bar { padding: 8px 12px; background: #FFF8F0; border-bottom: 1px solid #E8DDD0; font-size: 12px; color: #8B7355; display: flex; align-items: center; gap: 6px; }
+    .chat-context-bar .ctx-close { cursor: pointer; margin-left: auto; color: #999; }
+  </style>
+</head>
+<body>
+  <div class="app-container">
+    <div class="sidebar" id="sidebar">
+      <div class="sidebar-header">
+        <span class="sidebar-logo">白糕平台</span>
+        <button class="sidebar-toggle" onclick="toggleSidebar()">☰</button>
+      </div>
+      <div class="nav-item active" onclick="switchPage('home')">
+        <span class="nav-icon">🏠</span><span class="nav-text">首页</span>
+      </div>
+      <div class="nav-item" onclick="switchPage('exam')">
+        <span class="nav-icon">📝</span><span class="nav-text">试卷中心</span>
+      </div>
+      <div class="nav-item" onclick="switchPage('recorder')">
+        <span class="nav-icon">🎙️</span><span class="nav-text">录音笔记</span>
+      </div>
+      <div class="nav-item" onclick="switchPage('forum')">
+        <span class="nav-icon">💬</span><span class="nav-text">论坛</span>
+      </div>
+      <div class="nav-item" onclick="switchPage('profile')">
+        <span class="nav-icon">👤</span><span class="nav-text">我的</span>
+      </div>
+    </div>
+    <div class="main-content">
+      <!-- 首页 -->
+      <div class="page active" id="page-home">
+        <h1 class="page-title">欢迎使用白糕平台</h1>
+        <div class="card">
+          <h3>智能学习助手</h3>
+          <p>AI 驱动的在线学习平台，支持试卷生成、录音转文字、智能笔记等功能。</p>
+        </div>
+      </div>
+      
+      <!-- 试卷中心 -->
+      <div class="page" id="page-exam">
+        <h1 class="page-title">试卷中心</h1>
+        <div class="exam-tabs">
+          <div class="exam-tab active" onclick="switchExamTab('file')">资料出题</div>
+          <div class="exam-tab" onclick="switchExamTab('organize')">整理试卷</div>
+          <div class="exam-tab" onclick="switchExamTab('extend')">延伸出题</div>
+          <div class="exam-tab" onclick="switchExamTab('history')">📚 我的试卷</div>
+          <div class="exam-tab" onclick="switchExamTab('wrong')">📕 错题本</div>
+        </div>
+        
+        <div class="exam-panel active" id="exam-file-panel">
+          <div class="upload-zone" onclick="document.getElementById('examFileInput').click()">
+            <p>📄 点击上传学习资料（PDF/Word/TXT）</p>
+            <p style="font-size:12px;color:#999;margin-top:8px;">AI 将根据资料内容逐题生成</p>
+          </div>
+          <input type="file" id="examFileInput" style="display:none" accept=".pdf,.doc,.docx,.txt" onchange="handleExamFile(event)">
+          
+          <!-- 出题配置 -->
+          <div id="examConfig" style="display:none;margin-top:16px;">
+            <div class="card">
+              <h3 style="margin-bottom:12px;">⚙️ 出题设置</h3>
+              <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;">
+                <div>
+                  <p style="color:#8B7355;font-size:13px;margin-bottom:4px;">题目数量</p>
+                  <select id="examQuestionCount">
+                    <option value="3">3 题</option>
+                    <option value="5" selected>5 题</option>
+                    <option value="8">8 题</option>
+                    <option value="10">10 题</option>
+                    <option value="15">15 题</option>
+                    <option value="20">20 题</option>
+                  </select>
+                </div>
+                <div>
+                  <p style="color:#8B7355;font-size:13px;margin-bottom:4px;">题目类型</p>
+                  <select id="examQuestionType">
+                    <option value="mixed">混合出题</option>
+                    <option value="choice">只出选择题</option>
+                    <option value="fill">只出填空题</option>
+                    <option value="judge">只出判断题</option>
+                    <option value="short">只出简答题</option>
+                  </select>
+                </div>
+                <div>
+                  <p style="color:#8B7355;font-size:13px;margin-bottom:4px;">难度</p>
+                  <select id="examDifficulty">
+                    <option value="简单">简单</option>
+                    <option value="中等" selected>中等</option>
+                    <option value="困难">困难</option>
+                  </select>
+                </div>
+              </div>
+              <div id="examFileName" style="margin-top:10px;font-size:13px;color:#8B7355;"></div>
+              <button class="btn btn-primary" style="margin-top:12px;" onclick="startOneByOneExam()">开始逐题出题</button>
+            </div>
+          </div>
+
+
+        </div>
+        
+        <div class="exam-panel" id="exam-organize-panel">
+          <div class="card">
+            <h3 style="margin-bottom:12px;">整理试卷</h3>
+            <p style="color:#666;margin-bottom:12px;">粘贴或上传题目，AI 整理成规范试卷</p>
+            <textarea id="organizeTextInput" rows="8" placeholder="在这里粘贴题目内容..."></textarea>
+            <div style="margin-top:12px;display:flex;gap:10px;">
+              <button class="btn" onclick="document.getElementById('organizeFileInput').click()">📎 上传文件</button>
+              <button class="btn btn-primary" onclick="organizeQuestionsToExam()">整理成试卷</button>
+            </div>
+            <input type="file" id="organizeFileInput" style="display:none" accept=".pdf,.doc,.docx,.txt" onchange="handleOrganizeFile(event)">
+          </div>
+        </div>
+        
+        <div class="exam-panel" id="exam-extend-panel">
+          <div class="card">
+            <h3 style="margin-bottom:12px;">延伸出题</h3>
+            <p style="color:#666;margin-bottom:12px;">上传已有试卷，AI 分析知识点后生成新题</p>
+            <div class="upload-zone" onclick="document.getElementById('extendFileInput').click()">
+              <p>📄 点击上传试卷文件</p>
+            </div>
+            <input type="file" id="extendFileInput" style="display:none" accept=".pdf,.doc,.docx,.txt" onchange="handleExtendFile(event)">
+            <div id="extendConfig" style="display:none;margin-top:16px;">
+              <label>每题延伸数量：<select id="extendCount"><option>1</option><option selected>2</option><option>3</option></select></label>
+              <label style="margin-left:16px;">难度：<select id="extendDifficulty"><option>简单</option><option selected>中等</option><option>困难</option></select></label>
+              <button class="btn btn-primary" style="margin-left:16px;" onclick="extendExamQuestions()">生成延伸题</button>
+            </div>
+          </div>
+        </div>
+        
+        <div id="examPreview" style="display:none;margin-top:20px;">
+          <div class="card">
+            <h2 id="examPreviewTitle"></h2>
+            <div id="examContent"></div>
+            <div style="margin-top:16px;display:flex;gap:10px;">
+              <button class="btn" id="startAnswerBtn" onclick="startAnswering()">开始答题</button>
+              <button class="btn btn-primary" id="submitBtn" style="display:none;" onclick="submitAnswers()">提交答卷</button>
+              <button class="btn" onclick="saveExam()">保存试卷</button>
+            </div>
+            <div id="scoreCard" style="display:none;margin-top:16px;padding:16px;background:#FFF8F0;border-radius:8px;"></div>
+          </div>
+        </div>
+
+        <!-- 我的试卷 -->
+        <div class="exam-panel" id="exam-history-panel">
+          <div id="savedExamsList"></div>
+          <div id="savedExamPreview" style="display:none;margin-top:20px;"></div>
+        </div>
+
+        <!-- 错题本 -->
+        <div class="exam-panel" id="exam-wrong-panel">
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;">
+            <h3 style="margin:0;">📕 错题本</h3>
+            <div style="display:flex;gap:8px;">
+              <button class="btn btn-primary" onclick="retestWrongQuestions()" style="font-size:13px;">🔄 错题重练</button>
+              <button class="btn" onclick="clearWrongBook()" style="font-size:13px;">🗑️ 清空</button>
+            </div>
+          </div>
+          <div id="wrongBookList"></div>
+        </div>
+
+
+          <!-- 逐题答题区域（学习通模式） -->
+          <div id="examOneByOne" style="display:none;margin-top:16px;">
+            <div style="margin-bottom:12px;display:flex;align-items:center;gap:12px;">
+            <button class="btn" onclick="exitExamMode()" style="font-size:13px;">← 返回</button>
+            <span id="examModeTitle" style="font-weight:600;color:#7A5C42;"></span>
+          </div>
+          <!-- 出题中加载状态 -->
+            <div id="examLoadingAll" style="display:none;text-align:center;padding:40px;">
+              <div style="font-size:40px;margin-bottom:16px;">⏳</div>
+              <p style="font-size:16px;color:#7A5C42;font-weight:600;">AI 正在出题中...</p>
+              <p id="examLoadingProgress" style="font-size:14px;color:#8B7355;margin-top:8px;">正在生成第 1 / 5 题</p>
+            </div>
+            <!-- 答题主界面 -->
+            <div id="examMainView" style="display:none;">
+              <!-- 题号格子 -->
+              <div class="card" style="padding:12px 16px;">
+                <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;">
+                  <span style="font-size:14px;color:#8B7355;">答题卡</span>
+                  <span id="examAnsweredCount" style="font-size:13px;color:#8B7355;">已答 0 / 5 题</span>
+                </div>
+                <div id="examQuestionGrid" style="display:flex;flex-wrap:wrap;gap:8px;"></div>
+              </div>
+              <!-- 当前题目 -->
+              <div class="card" id="examCurrentQuestion" style="margin-top:12px;">
+                <div id="examQuestionContent" style="line-height:1.8;"></div>
+                <!-- 作答区域 -->
+                <div id="examInputArea" style="margin-top:16px;border-top:1px dashed #E8DDD0;padding-top:16px;">
+                  <p style="font-weight:600;color:#7A5C42;margin-bottom:10px;">✏️ 你的答案</p>
+                  <div id="examChoiceInput"></div>
+                  <div id="examTextInput" style="display:none;">
+                    <input type="text" id="examAnswerInput" placeholder="输入你的答案..." style="width:100%;margin-bottom:10px;">
+                  </div>
+                  <div id="examJudgeInput" style="display:none;">
+                    <div style="display:flex;gap:10px;">
+                      <label class="q-option" style="display:flex;align-items:center;gap:6px;padding:10px 20px;border:1px solid var(--border);border-radius:8px;cursor:pointer;flex:1;justify-content:center;" onclick="selectJudge(this,'正确')">
+                        <input type="radio" name="judgeAnswer" value="正确" style="display:none;"> 正确
+                      </label>
+                      <label class="q-option" style="display:flex;align-items:center;gap:6px;padding:10px 20px;border:1px solid var(--border);border-radius:8px;cursor:pointer;flex:1;justify-content:center;" onclick="selectJudge(this,'错误')">
+                        <input type="radio" name="judgeAnswer" value="错误" style="display:none;"> 错误
+                      </label>
+                    </div>
+                  </div>
+                </div>
+                <!-- 结果区域 -->
+                <div id="examResultArea" style="margin-top:16px;display:none;">
+                  <div id="examResultMsg" style="padding:12px;border-radius:8px;margin-bottom:12px;font-weight:600;"></div>
+                  <div style="border-top:1px dashed #E8DDD0;padding-top:12px;">
+                    <p style="font-weight:600;color:#7A5C42;margin-bottom:8px;">📖 正确答案</p>
+                    <div id="examAnswerContent" style="color:#555;line-height:1.8;"></div>
+                  </div>
+                </div>
+              </div>
+              <!-- 底部按钮 -->
+              <div style="display:flex;gap:10px;margin-top:12px;justify-content:space-between;">
+                <button class="btn" id="examPrevBtn" onclick="goToQuestion(examCurrentIndex-1)">← 上一题</button>
+                <button class="btn btn-primary" id="examSubmitBtn" onclick="submitAnswer()">提交答案</button>
+                <button class="btn btn-primary" id="examNextBtn" onclick="goToQuestion(examCurrentIndex+1)">下一题 →</button>
+              </div>
+              <div style="text-align:center;margin-top:12px;">
+                <button class="btn btn-primary" id="examFinishBtn" onclick="finishOneByOneExam()" style="display:none;background:#27ae60;border-color:#27ae60;">📊 查看成绩</button>
+              </div>
+            </div>
+            <!-- 成绩与回顾（完成后展示） -->
+            <div id="examFinalView" style="display:none;">
+              <div class="card" id="examScoreCard" style="text-align:center;background:#FFF8F0;"></div>
+              <div class="card" style="margin-top:12px;">
+                <h3 style="margin-bottom:12px;">📋 全部题目回顾</h3>
+                <div id="examGeneratedList" style="max-height:500px;overflow-y:auto;"></div>
+              </div>
+            </div>
+          </div>
+      </div>
+      
+      <!-- 录音笔记 -->
+      <div class="page" id="page-recorder">
+        <h1 class="page-title">录音笔记</h1>
+        <div style="display:flex;gap:10px;margin-bottom:20px;">
+          <button class="btn btn-primary" id="recModeBtn" onclick="switchRecMode('live')">🎙️ 实时录音</button>
+          <button class="btn" id="uploadModeBtn" onclick="switchRecMode('upload')">📁 上传文件</button>
+        </div>
+
+        <!-- 实时录音模式 -->
+        <div id="recLivePanel">
+          <div style="display:flex;gap:20px;height:calc(100vh - 220px);">
+            <div style="flex:1;display:flex;flex-direction:column;">
+              <div class="card" style="flex:1;display:flex;flex-direction:column;overflow:hidden;background:#1a1a2e;border:2px solid #333;">
+                <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;">
+                  <div style="display:flex;align-items:center;gap:10px;">
+                    <h3 style="color:#e0e0e0;">📝 实时转写</h3>
+                    <span id="recStatusDot" style="display:none;width:10px;height:10px;border-radius:50%;background:#e74c3c;"></span>
+                  </div>
+                  <div style="display:flex;align-items:center;gap:10px;">
+                    <span id="recTimer" style="font-size:16px;color:#aaa;font-variant-numeric:tabular-nums;font-family:monospace;">00:00</span>
+                    <button class="btn btn-primary" id="recStartBtn" onclick="toggleLiveRecord()" style="border-radius:50%;width:48px;height:48px;font-size:20px;padding:0;">🎤</button>
+                  </div>
+                </div>
+                <div id="liveTranscript" style="flex:1;overflow-y:auto;font-size:17px;line-height:2;color:#e0e0e0;white-space:pre-wrap;font-family:'PingFang SC','Microsoft YaHei',sans-serif;">点击麦克风按钮开始录音...</div>
+              </div>
+            </div>
+            <div style="flex:1;display:flex;flex-direction:column;">
+              <div class="card" style="flex:1;overflow-y:auto;">
+                <h3 style="margin-bottom:12px;">📋 AI 笔记</h3>
+                <div id="liveNotes" style="font-size:14px;line-height:1.8;color:#555;">录音内容会实时整理成笔记...</div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- 上传文件模式 -->
+        <div id="recUploadPanel" style="display:none;">
+          <div style="display:flex;gap:8px;margin-bottom:16px;">
+            <button class="btn btn-primary" id="uploadTextTab" onclick="switchUploadMode('text')">📝 输入文本</button>
+            <button class="btn" id="uploadAudioTab" onclick="switchUploadMode('audio')">🎵 上传音频</button>
+          </div>
+          <!-- 文本输入模式 -->
+          <div id="uploadTextMode">
+            <div class="card">
+              <h3 style="margin-bottom:12px;">输入或粘贴文本</h3>
+              <textarea id="directTextInput" rows="12" placeholder="在此粘贴或输入需要生成思维导图和笔记的文本内容……&#10;&#10;也可以点击下面的按钮上传 .txt 文件" style="width:100%;resize:vertical;line-height:1.8;"></textarea>
+              <div style="display:flex;gap:8px;margin-top:12px;">
+                <button class="btn" onclick="document.getElementById('txtFileInput').click()">📄 上传txt文件</button>
+                <input type="file" id="txtFileInput" style="display:none" accept=".txt,.md,.srt,.csv" onchange="handleTxtFileSelect(event)">
+                <div style="flex:1;"></div>
+                <button class="btn btn-primary" onclick="generateFromText()">🚀 生成思维导图 + 笔记</button>
+              </div>
+            </div>
+          </div>
+          <!-- 音频上传模式 -->
+          <div id="uploadAudioMode" style="display:none;">
+            <div class="card">
+              <h3 style="margin-bottom:12px;">上传音频文件</h3>
+              <div class="upload-zone" onclick="document.getElementById('audioFileInput').click()">
+                <p style="font-size:16px;">🎵 点击选择音频文件</p>
+                <p style="font-size:13px;color:#999;margin-top:8px;">支持 mp3/wav/ogg/m4a 等格式（使用浏览器语音识别，建议环境安静）</p>
+              </div>
+              <input type="file" id="audioFileInput" style="display:none" accept="audio/*" onchange="handleAudioFileSelect(event)">
+            </div>
+            <div class="card" id="uploadPlayerCard" style="display:none;">
+              <audio id="audioPlayer" controls style="width:100%;margin-bottom:12px;"></audio>
+              <button class="btn btn-primary" onclick="processUploadedAudio()" style="width:100%;">🚀 识别音频并生成思维导图 + 笔记</button>
+              <div class="audio-progress" id="audioProgress" style="margin-top:10px;">
+                <div class="audio-progress-bar"><div class="audio-progress-bar-fill" id="audioProgressFill"></div></div>
+                <div class="audio-progress-text" id="audioProgressText">识别中...</div>
+              </div>
+            </div>
+          </div>
+          <div id="uploadResult" style="margin-top:16px;"></div>
+        </div>
+      </div>
+      
+      <!-- 论坛 -->
+      <div class="page" id="page-forum">
+        <h1 class="page-title">论坛讨论区</h1>
+        <div class="forum-tabs">
+          <div class="forum-tab active" onclick="switchForumTab('public')">大众频道</div>
+          <div class="forum-tab" onclick="switchForumTab('private')">私聊</div>
+        </div>
+        <div id="forumPublic">
+          <div class="forum-anon-bar">
+            <span>🐱</span>
+            <span>当前身份：</span>
+            <span class="anon-tag" id="forumMyAnonId">匿名白猫#0000</span>
+            <span style="margin-left:auto;cursor:pointer;color:var(--text-sec);" onclick="refreshAnonId()">🔄 换身份</span>
+          </div>
+          <div class="school-bar" id="schoolBar"></div>
+          <div class="forum-post-list-wrap" id="forumPostListWrap">
+            <div class="forum-post-list" id="forumPostList"></div>
+          </div>
+          <div class="forum-post-detail" id="forumPostDetail">
+            <div class="post-detail-header">
+              <div class="back-btn" onclick="backToPostList()">← 返回列表</div>
+              <div id="postDetailContent"></div>
+            </div>
+          </div>
+        </div>
+        <div class="forum-private-chat" id="forumPrivateChat">
+          <div class="chat-contact-list" id="chatContactList"></div>
+          <div class="chat-window" id="chatWindow">
+            <div class="chat-empty">选择一个联系人开始聊天</div>
+          </div>
+        </div>
+        <button class="forum-fab" id="forumFab" onclick="openCreatePostModal()">✎</button>
+      </div>
+      
+      <!-- 我的 -->
+      <div class="page" id="page-profile">
+        <h1 class="page-title" id="profileTitle" style="user-select:none;">我的</h1>
+        
+        <!-- 个人信息 -->
+        <div class="card">
+          <h3 style="margin-bottom:16px;">👤 个人信息</h3>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
+            <div>
+              <p style="color:#8B7355;font-size:13px;margin-bottom:4px;">姓名</p>
+              <input type="text" id="profileName" placeholder="你的昵称">
+            </div>
+            <div>
+              <p style="color:#8B7355;font-size:13px;margin-bottom:4px;">学校</p>
+              <input type="text" id="profileSchool" placeholder="你的学校">
+            </div>
+            <div>
+              <p style="color:#8B7355;font-size:13px;margin-bottom:4px;">年级/班级</p>
+              <input type="text" id="profileGrade" placeholder="如：高二3班">
+            </div>
+            <div>
+              <p style="color:#8B7355;font-size:13px;margin-bottom:4px;">兴趣学科</p>
+              <input type="text" id="profileInterest" placeholder="如：数学、物理、英语">
+            </div>
+          </div>
+          <div style="margin-top:12px;">
+            <p style="color:#8B7355;font-size:13px;margin-bottom:4px;">个人简介</p>
+            <textarea id="profileBio" rows="2" placeholder="介绍一下自己吧..." style="resize:vertical;"></textarea>
+          </div>
+          <button class="btn btn-primary" style="margin-top:12px;" onclick="saveProfile()">保存个人信息</button>
+        </div>
+
+        <!-- 我的数据概览 -->
+        <div class="card">
+          <h3 style="margin-bottom:12px;">📊 我的数据</h3>
+          <div style="display:flex;gap:20px;flex-wrap:wrap;">
+            <div style="text-align:center;padding:12px 20px;background:#FFF8F0;border-radius:8px;min-width:100px;">
+              <div id="statExams" style="font-size:28px;font-weight:700;color:#7A5C42;">0</div>
+              <div style="font-size:13px;color:#8B7355;margin-top:4px;">已保存试卷</div>
+            </div>
+            <div style="text-align:center;padding:12px 20px;background:#FFF8F0;border-radius:8px;min-width:100px;">
+              <div id="statPosts" style="font-size:28px;font-weight:700;color:#7A5C42;">0</div>
+              <div style="font-size:13px;color:#8B7355;margin-top:4px;">论坛帖子</div>
+            </div>
+            <div style="text-align:center;padding:12px 20px;background:#FFF8F0;border-radius:8px;min-width:100px;">
+              <div id="statNotes" style="font-size:28px;font-weight:700;color:#7A5C42;">0</div>
+              <div style="font-size:13px;color:#8B7355;margin-top:4px;">笔记记录</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- 试卷管理 -->
+        <div class="card">
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;">
+            <h3>📝 我的试卷</h3>
+            <button class="btn" onclick="switchPage('exam')" style="font-size:13px;">查看全部 →</button>
+          </div>
+          <div id="profileExamList"></div>
+        </div>
+
+        <!-- 数据管理 -->
+        <div class="card">
+          <h3 style="margin-bottom:12px;">💾 数据管理</h3>
+          <div style="display:flex;gap:10px;flex-wrap:wrap;">
+            <button class="btn" onclick="exportData()">📤 导出数据</button>
+            <button class="btn" onclick="document.getElementById('importInput').click()">📥 导入数据</button>
+            <input type="file" id="importInput" style="display:none" accept=".json" onchange="importData(event)">
+            <button class="btn" onclick="clearAllData()" style="color:#c0392b;border-color:#c0392b;">🗑️ 清除所有数据</button>
+          </div>
+        </div>
+
+        <!-- 高级设置（开发者模式，默认隐藏） -->
+        <div class="card" id="devSettingsCard" style="display:none;">
+          <div onclick="toggleAdvancedSettings()" style="cursor:pointer;display:flex;justify-content:space-between;align-items:center;">
+            <h3>🔧 开发者设置</h3>
+            <span id="advancedSettingsArrow" style="color:#8B7355;">▶</span>
+          </div>
+          <div id="advancedSettingsBody" style="display:none;margin-top:16px;">
+            <p style="color:#666;margin:8px 0;">DeepSeek API Key</p>
+            <input type="password" id="settingApiKey" placeholder="sk-xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx" style="margin-bottom:8px;">
+            <p style="color:#666;margin:8px 0;">AI 模型选择</p>
+            <select id="settingModel" style="margin-bottom:8px;">
+              <option value="deepseek-chat">DeepSeek-V3（快速，日常使用）</option>
+              <option value="deepseek-reasoner">DeepSeek-R1（深度推理，更聪明但较慢）</option>
+            </select>
+            <p style="color:#666;margin:8px 0;">DashScope API Key（录音笔记-通义千问+语音识别）</p>
+            <input type="password" id="settingDashScopeKey" placeholder="sk-xxx（百炼平台API Key）" style="margin-bottom:8px;">
+            <p style="color:#666;margin:8px 0;">后端服务地址（可选）</p>
+            <input type="text" id="settingBackendUrl" placeholder="例如：https://your-backend.onrender.com" style="margin-bottom:10px;">
+            <button class="btn btn-primary" onclick="saveSettings()">保存配置</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+  
+  <!-- AI 助手 -->
+  <button id="aiCatButton" onclick="toggleAiChat()"><img src="data:image/png;base64,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" style="width:40px;height:40px;border-radius:50%;pointer-events:none;"></button>
+  <div class="ai-chat-window" id="aiChatWindow">
+    <div class="ai-chat-header">
+      <img src="data:image/png;base64,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" style="width:24px;height:24px;border-radius:50%;"><span class="ai-chat-title">白糕</span>
+      <button onclick="toggleAiChat()">✕</button>
+    </div>
+    <div class="ai-chat-body" id="aiChatBody">
+      <div class="ai-msg assistant">嗨～我是白糕 🐱 不管是学习上的问题还是想随便聊聊，都可以找我呀！</div>
+    </div>
+    <div class="ai-chat-input-area">
+      <input type="text" id="aiChatInput" placeholder="跟白糕说点什么..." onkeydown="if(event.key==='Enter')sendAiMessage()">
+      <button id="aiSendBtn" onclick="sendAiMessage()">发送</button>
+    </div>
+  </div>
+  
+  <div class="modal-overlay" id="modalOverlay" onclick="closeModal(event)">
+    <div class="modal" id="modalContent"></div>
+  </div>
+
+  <script>
+// ========== Config ==========
+function getApiKey() {
+  return 'sk-0d48a713a0474df8a95df0043ab39b61';
+}
+function getDashScopeApiKey() {
+  return 'sk-ws-H.RYXIMYX.kve9.MEQCIH9t24Gh3cE4XJQmJE15Kn8x7sOEEHh92519PWjUCKF-AiBcbGiiHMOizXSrKvLTkotiv671-MvN92LDUrkJHQJ8PQ';
+}
+function getBackendUrl() {
+  return localStorage.getItem('api_backend_url') || '';
+}
+function saveSettings() {
+  const key = document.getElementById('settingApiKey').value.trim();
+  const dsKey = document.getElementById('settingDashScopeKey').value.trim();
+  const url = document.getElementById('settingBackendUrl').value.trim();
+  const model = document.getElementById('settingModel').value;
+  localStorage.setItem('deepseek_api_key', key);
+  if (dsKey) localStorage.setItem('dashscope_api_key', dsKey);
+  localStorage.setItem('api_backend_url', url);
+  localStorage.setItem('baigao_model', model);
+  showToast('配置已保存（模型：' + document.getElementById('settingModel').selectedOptions[0].text + '）');
+}
+
+// ========== File Parser ==========
+async function parseFileContent(file) {
+  const ext = file.name.split('.').pop().toLowerCase();
+  if (ext === 'txt') {
+    return await file.text();
+  } else if (ext === 'pdf') {
+    const arrayBuffer = await file.arrayBuffer();
+    pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+    const pdf = await pdfjsLib.getDocument({data: arrayBuffer}).promise;
+    let text = '';
+    for (let i = 1; i <= pdf.numPages; i++) {
+      const page = await pdf.getPage(i);
+      const content = await page.getTextContent();
+      text += content.items.map(item => item.str).join(' ') + '\n';
+    }
+    return text;
+  } else if (ext === 'docx') {
+    const arrayBuffer = await file.arrayBuffer();
+    const result = await mammoth.extractRawText({arrayBuffer: arrayBuffer});
+    return result.value;
+  } else {
+    return await file.text();
+  }
+}
+
+// ========== Global State ==========
+let manualQuestions = [];
+let currentExam = null;
+let currentAnswers = {};
+let isAnswering = false;
+let uploadedFiles = [];
+let pendingFriendRequestFrom = null;
+let currentViewingQuestion = null;
+let forumCurrentSchool = "全部";
+let forumCurrentPostId = null;
+let forumCurrentChatUser = null;
+let aiChatHistory = [];
+
+// ========== DeepSeek API ==========
+async function callDeepSeek(messages, options = {}) {
+  const apiKey = getApiKey();
+  if (!apiKey) { showToast('请先在"我的"页面配置 DeepSeek API Key'); return null; }
+  
+  try {
+    const res = await fetch('https://api.deepseek.com/chat/completions', {
+      method: 'POST',
+      headers: { 
+        'Content-Type': 'application/json',
+        'Authorization': 'Bearer ' + apiKey
+      },
+      body: JSON.stringify({ 
+        model: localStorage.getItem('baigao_model') || 'deepseek-chat',
+        messages: messages,
+        ...options 
+      })
+    });
+    const data = await res.json();
+    if (data.error) { showToast('AI 错误：' + (data.error.message || data.error)); return null; }
+    return data.choices?.[0]?.message?.content || null;
+  } catch(e) {
+    showToast('网络错误：' + e.message);
+    return null;
+  }
+}
+
+// 通义千问 API（用于录音笔记）
+async function callQwen(messages, options = {}) {
+  const apiKey = getDashScopeApiKey();
+  if (!apiKey) { showToast('请先配置 DashScope API Key'); return null; }
+  
+  try {
+    const res = await fetch('https://dashscope.aliyuncs.com/compatible-mode/v1/chat/completions', {
+      method: 'POST',
+      headers: { 
+        'Content-Type': 'application/json',
+        'Authorization': 'Bearer ' + apiKey
+      },
+      body: JSON.stringify({ 
+        model: 'qwen-plus',
+        messages: messages,
+        ...options 
+      })
+    });
+    const data = await res.json();
+    if (data.error) { showToast('AI 错误：' + (data.error.message || data.error)); return null; }
+    return data.choices?.[0]?.message?.content || null;
+  } catch(e) {
+    showToast('网络错误：' + e.message);
+    return null;
+  }
+}
+
+// 清理AI返回的JSON字符串，去除markdown代码块标记
+function cleanJsonResponse(text) {
+  if (!text) return text;
+  // 去除markdown代码块标记 ```json ... ``` 或 ``` ... ```
+  text = text.replace(/```json\s*/gi, '').replace(/```\s*/g, '');
+  // 去除首尾空白
+  text = text.trim();
+  return text;
+}
+
+// ========== Navigation ==========
+function switchPage(page) {
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.getElementById('page-' + page).classList.add('active');
+  document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+  event.currentTarget.classList.add('active');
+  
+  if (page === 'forum') {
+    document.getElementById('forumFab').classList.add('show');
+    initForum();
+  } else {
+    document.getElementById('forumFab').classList.remove('show');
+  }
+  
+  if (page === 'profile') {
+    updateStats();
+  }
+}
+
+function toggleSidebar() {
+  document.getElementById('sidebar').classList.toggle('collapsed');
+  document.querySelectorAll('.nav-text').forEach(t => t.style.display = t.style.display === 'none' ? '' : 'none');
+}
+
+// ========== Exam Center ==========
+function switchExamTab(tab) {
+  document.querySelectorAll('.exam-tab').forEach(t => t.classList.remove('active'));
+  event.currentTarget.classList.add('active');
+  document.querySelectorAll('.exam-panel').forEach(p => p.classList.remove('active'));
+  document.getElementById('exam-' + tab + '-panel').classList.add('active');
+  // 隐藏答题模式
+  document.getElementById('examOneByOne').style.display = 'none';
+  if (tab === 'history') renderSavedExams();
+  if (tab === 'wrong') renderWrongBook();
+}
+
+function exitExamMode() {
+  document.getElementById('examOneByOne').style.display = 'none';
+  document.getElementById('examFinalView').style.display = 'none';
+  document.getElementById('examMainView').style.display = 'none';
+  document.getElementById('examConfig').style.display = 'none';
+  document.getElementById('extendConfig').style.display = 'none';
+  // 恢复到默认的资料出题 tab
+  document.querySelectorAll('.exam-tab').forEach(t => t.classList.remove('active'));
+  document.querySelectorAll('.exam-panel').forEach(p => p.classList.remove('active'));
+  document.querySelector('.exam-tab').classList.add('active');
+  document.getElementById('exam-file-panel').classList.add('active');
+}
+
+// ========== 逐题出题 ==========
+let examSourceContent = '';
+let examSourceFileName = '';
+let examSourceTitle = '';
+let examGeneratedQuestions = [];
+let examCurrentIndex = 0;
+let examTotalCount = 5;
+
+async function handleExamFile(e) {
+  const file = e.target.files[0];
+  if (!file) return;
+  
+  showToast('正在读取文件内容...');
+  try {
+    const content = await parseFileContent(file);
+    if (!content.trim()) {
+      showToast('文件内容为空，请检查文件');
+      return;
+    }
+    examSourceContent = content;
+    examSourceFileName = file.name;
+    
+    // 显示配置面板
+    document.getElementById('examConfig').style.display = '';
+    document.getElementById('examOneByOne').style.display = 'none';
+    document.getElementById('examFileName').textContent = '📄 ' + file.name + '（' + content.length + ' 字）';
+    showToast('文件读取成功，请设置出题参数');
+  } catch(err) {
+    showToast('文件读取失败：' + err.message);
+  }
+}
+
+let examCorrectCount = 0;
+let examAnswerStatus = []; // 0=未答, 1=正确, 2=错误
+
+function enterExamMode(questions, title) {
+  examGeneratedQuestions = questions.map((q, i) => ({ ...q, _index: i + 1, _userAnswer: '' }));
+  examTotalCount = questions.length;
+  examCurrentIndex = 0;
+  examCorrectCount = 0;
+  examAnswerStatus = new Array(examTotalCount).fill(0);
+  examSourceTitle = title;
+
+  // 隐藏所有 panel、配置和预览，只显示答题区
+  document.querySelectorAll('.exam-panel').forEach(p => p.classList.remove('active'));
+  document.getElementById('examConfig').style.display = 'none';
+  document.getElementById('examPreview').style.display = 'none';
+  document.getElementById('extendConfig').style.display = 'none';
+  document.getElementById('examOneByOne').style.display = '';
+  document.getElementById('examLoadingAll').style.display = 'none';
+  document.getElementById('examMainView').style.display = '';
+  document.getElementById('examFinalView').style.display = 'none';
+  document.getElementById('examModeTitle').textContent = title;
+
+  examCurrentIndex = 1;
+  renderQuestionGrid();
+  renderCurrentQuestion();
+}
+
+async function startOneByOneExam() {
+  examTotalCount = parseInt(document.getElementById('examQuestionCount').value);
+  examGeneratedQuestions = [];
+  examCurrentIndex = 0;
+  examCorrectCount = 0;
+  examAnswerStatus = new Array(examTotalCount).fill(0);
+  examSourceTitle = 'AI 生成试卷 - ' + (examSourceFileName || '资料');
+  
+  // 隐藏所有 panel 和配置，显示答题区加载中
+  document.querySelectorAll('.exam-panel').forEach(p => p.classList.remove('active'));
+  document.getElementById('examConfig').style.display = 'none';
+  document.getElementById('examOneByOne').style.display = '';
+  document.getElementById('examLoadingAll').style.display = '';
+  document.getElementById('examMainView').style.display = 'none';
+  document.getElementById('examFinalView').style.display = 'none';
+  document.getElementById('examModeTitle').textContent = examSourceTitle;
+  
+  // 生成全部题目
+  await generateAllQuestions();
+}
+
+async function generateAllQuestions() {
+  const typeMap = {
+    'mixed': '从选择题、填空题、判断题、简答题中随机选择一种类型',
+    'choice': '选择题（包含4个选项A/B/C/D）',
+    'fill': '填空题',
+    'judge': '判断题（答案为"正确"或"错误"）',
+    'short': '简答题'
+  };
+  const typeSetting = document.getElementById('examQuestionType').value;
+  const difficulty = document.getElementById('examDifficulty').value;
+  const truncatedContent = examSourceContent.length > 3000 ? examSourceContent.substring(0, 3000) + '...(已截断)' : examSourceContent;
+  
+  for (let i = 1; i <= examTotalCount; i++) {
+    document.getElementById('examLoadingProgress').textContent = `正在生成第 ${i} / ${examTotalCount} 题`;
+    
+    let prevSummary = '';
+    if (examGeneratedQuestions.length > 0) {
+      prevSummary = '\n\n已出过的题目摘要（请勿重复）：';
+      examGeneratedQuestions.forEach((q, idx) => {
+        prevSummary += '\n第' + (idx+1) + '题(' + q.type + ')：' + (q.content || '').substring(0, 50) + '...';
+      });
+    }
+    
+    try {
+      const result = await callDeepSeek([
+        { role: 'system', content: '你是一个专业的出题老师。请严格以JSON格式返回一道题目，不要包含任何其他文字。JSON格式示例：\n选择题：{"type":"选择题","content":"题目内容","options":["A. 选项1","B. 选项2","C. 选项3","D. 选项4"],"answer":"A"}\n填空题：{"type":"填空题","content":"题目内容（用____表示空）","answer":"正确答案"}\n判断题：{"type":"判断题","content":"题目内容","answer":"正确"}\n简答题：{"type":"简答题","content":"题目内容","answer":"参考答案"}' },
+        { role: 'user', content: `请根据以下学习资料，出第 ${i} 题（共 ${examTotalCount} 题）。\n\n要求：\n- 题目类型：${typeMap[typeSetting]}\n- 难度：${difficulty}\n- 必须紧扣资料内容\n- 每道题都要考查不同的知识点${prevSummary}\n\n资料内容：\n${truncatedContent}` }
+      ]);
+      
+      if (result) {
+        const cleaned = cleanJsonResponse(result);
+        try {
+          const question = JSON.parse(cleaned);
+          question._index = i;
+          question._userAnswer = '';
+          examGeneratedQuestions.push(question);
+        } catch(e) { /* 解析失败跳过 */ }
+      }
+    } catch(e) { /* 出错跳过 */ }
+  }
+  
+  if (examGeneratedQuestions.length === 0) {
+    showToast('出题失败，请重试');
+    document.getElementById('examLoadingAll').style.display = 'none';
+    document.getElementById('examConfig').style.display = '';
+    document.getElementById('examOneByOne').style.display = 'none';
+    return;
+  }
+  
+  // 题目生成完毕，切换到答题界面
+  examTotalCount = examGeneratedQuestions.length;
+  document.getElementById('examLoadingAll').style.display = 'none';
+  document.getElementById('examMainView').style.display = '';
+  
+  renderQuestionGrid();
+  examCurrentIndex = 1;
+  renderCurrentQuestion();
+}
+
+function renderQuestionGrid() {
+  const grid = document.getElementById('examQuestionGrid');
+  let html = '';
+  for (let i = 1; i <= examTotalCount; i++) {
+    const status = examAnswerStatus[i-1];
+    let bg = '#F0E8DC', color = '#4A3728', border = '1px solid #E8DDD0';
+    if (status === 1) { bg = '#c8e6c9'; color = '#2e7d32'; border = '1px solid #4caf50'; }
+    else if (status === 2) { bg = '#ffcdd2'; color = '#c62828'; border = '1px solid #f44336'; }
+    if (i === examCurrentIndex) { border = '2px solid #7A5C42'; }
+    html += `<div onclick="goToQuestion(${i})" style="width:36px;height:36px;display:flex;align-items:center;justify-content:center;border-radius:6px;background:${bg};color:${color};border:${border};cursor:pointer;font-weight:600;font-size:14px;">${i}</div>`;
+  }
+  grid.innerHTML = html;
+  
+  const answered = examAnswerStatus.filter(s => s !== 0).length;
+  document.getElementById('examAnsweredCount').textContent = `已答 ${answered} / ${examTotalCount} 题`;
+}
+
+function goToQuestion(idx) {
+  if (idx < 1 || idx > examTotalCount) return;
+  examCurrentIndex = idx;
+  renderCurrentQuestion();
+  renderQuestionGrid();
+}
+
+function renderCurrentQuestion() {
+  const question = examGeneratedQuestions[examCurrentIndex - 1];
+  if (!question) return;
+  
+  const status = examAnswerStatus[examCurrentIndex - 1]; // 0=未答, 1=正确, 2=错误
+  const isAnswered = status !== 0;
+  
+  // 渲染题目内容
+  let qHtml = `<div style="font-weight:600;margin-bottom:8px;font-size:15px;">第 ${examCurrentIndex} 题 [${question.type}]</div>`;
+  qHtml += `<div style="margin-bottom:12px;line-height:1.8;">${escapeHtml(question.content)}</div>`;
+  document.getElementById('examQuestionContent').innerHTML = qHtml;
+  
+  // 重置输入区
+  document.getElementById('examChoiceInput').innerHTML = '';
+  document.getElementById('examChoiceInput').style.display = 'none';
+  document.getElementById('examTextInput').style.display = 'none';
+  document.getElementById('examJudgeInput').style.display = 'none';
+  document.getElementById('examAnswerInput').value = '';
+  document.getElementById('examResultArea').style.display = 'none';
+  
+  if (isAnswered) {
+    // 已答题：只显示结果，不允许重新作答
+    document.getElementById('examInputArea').style.display = 'none';
+    document.getElementById('examSubmitBtn').style.display = 'none';
+    document.getElementById('examResultArea').style.display = '';
+    
+    const correctAnswer = (question.answer || '').trim();
+    const userAns = question._userAnswer || '';
+    const resultMsg = document.getElementById('examResultMsg');
+    if (status === 1) {
+      resultMsg.style.background = '#e8f5e9';
+      resultMsg.style.color = '#2e7d32';
+      resultMsg.textContent = '✅ 回答正确！';
+    } else {
+      resultMsg.style.background = '#ffebee';
+      resultMsg.style.color = '#c62828';
+      resultMsg.innerHTML = '❌ 回答错误。你的答案：' + escapeHtml(userAns);
+    }
+    document.getElementById('examAnswerContent').textContent = correctAnswer || '暂无';
+  } else {
+    // 未答题：显示输入控件
+    if (question.type === '选择题' && question.options) {
+      let choiceHtml = '<div style="display:flex;flex-direction:column;gap:6px;">';
+      question.options.forEach((opt, idx) => {
+        const letter = String.fromCharCode(65 + idx);
+        choiceHtml += `<label class="q-option" style="display:flex;align-items:center;gap:8px;" onclick="selectChoice(this, '${letter}')">
+          <input type="radio" name="choiceAnswer" value="${letter}" style="flex-shrink:0;">
+          <span>${escapeHtml(opt)}</span>
+        </label>`;
+      });
+      choiceHtml += '</div>';
+      document.getElementById('examChoiceInput').innerHTML = choiceHtml;
+      document.getElementById('examChoiceInput').style.display = '';
+    } else if (question.type === '判断题') {
+      document.getElementById('examJudgeInput').style.display = '';
+    } else {
+      document.getElementById('examTextInput').style.display = '';
+    }
+    
+    document.getElementById('examInputArea').style.display = '';
+    document.getElementById('examSubmitBtn').style.display = '';
+  }
+  
+  // 上一题/下一题按钮
+  document.getElementById('examPrevBtn').style.display = examCurrentIndex > 1 ? '' : 'none';
+  document.getElementById('examNextBtn').style.display = examCurrentIndex < examTotalCount ? '' : 'none';
+  
+  // 查看成绩按钮：全部答完才显示
+  const allAnswered = examAnswerStatus.every(s => s !== 0);
+  document.getElementById('examFinishBtn').style.display = allAnswered ? '' : 'none';
+}
+
+function selectChoice(el, letter) {
+  document.querySelectorAll('#examChoiceInput .q-option').forEach(opt => opt.classList.remove('selected'));
+  el.classList.add('selected');
+  el.querySelector('input[type="radio"]').checked = true;
+}
+
+function selectJudge(el, val) {
+  document.querySelectorAll('#examJudgeInput .q-option').forEach(opt => opt.classList.remove('selected'));
+  el.classList.add('selected');
+  el.querySelector('input[type="radio"]').checked = true;
+}
+
+function getUserAnswer() {
+  const question = examGeneratedQuestions[examCurrentIndex - 1];
+  if (!question) return '';
+  if (question.type === '选择题') {
+    const checked = document.querySelector('input[name="choiceAnswer"]:checked');
+    return checked ? checked.value : '';
+  } else if (question.type === '判断题') {
+    const checked = document.querySelector('input[name="judgeAnswer"]:checked');
+    return checked ? checked.value : '';
+  } else {
+    return document.getElementById('examAnswerInput').value.trim();
+  }
+}
+
+function submitAnswer() {
+  const userAnswer = getUserAnswer();
+  if (!userAnswer) { showToast('请先作答再提交'); return; }
+  
+  const question = examGeneratedQuestions[examCurrentIndex - 1];
+  question._userAnswer = userAnswer;
+  
+  // 判断对错
+  const correctAnswer = (question.answer || '').trim();
+  let isCorrect = false;
+  
+  if (question.type === '选择题' || question.type === '判断题') {
+    isCorrect = userAnswer.trim().toUpperCase() === correctAnswer.toUpperCase();
+  } else {
+    const normalize = s => s.replace(/\s+/g, '').toLowerCase();
+    isCorrect = normalize(userAnswer) === normalize(correctAnswer) || 
+                (normalize(correctAnswer).includes(normalize(userAnswer)) && userAnswer.length >= correctAnswer.length * 0.5);
+  }
+  
+  if (isCorrect) { examCorrectCount++; examAnswerStatus[examCurrentIndex - 1] = 1; }
+  else {
+    examAnswerStatus[examCurrentIndex - 1] = 2;
+    // 答错自动保存到错题本
+    saveWrongQuestion(question, userAnswer);
+  }
+  
+  // 隐藏作答区，显示结果
+  document.getElementById('examInputArea').style.display = 'none';
+  document.getElementById('examResultArea').style.display = '';
+  document.getElementById('examSubmitBtn').style.display = 'none';
+  
+  const resultMsg = document.getElementById('examResultMsg');
+  if (isCorrect) {
+    resultMsg.style.background = '#e8f5e9';
+    resultMsg.style.color = '#2e7d32';
+    resultMsg.textContent = '✅ 回答正确！';
+  } else {
+    resultMsg.style.background = '#ffebee';
+    resultMsg.style.color = '#c62828';
+    resultMsg.innerHTML = '❌ 回答错误。你的答案：' + escapeHtml(userAnswer);
+  }
+  document.getElementById('examAnswerContent').textContent = correctAnswer || '暂无';
+  
+  // 更新答题卡
+  renderQuestionGrid();
+  
+  // 1.2秒后自动跳转下一题（最后一题则显示成绩）
+  setTimeout(() => {
+    if (examCurrentIndex < examTotalCount) {
+      goToQuestion(examCurrentIndex + 1);
+    } else {
+      const allAnswered = examAnswerStatus.every(s => s !== 0);
+      if (allAnswered) {
+        document.getElementById('examFinishBtn').style.display = '';
+      }
+    }
+  }, 1200);
+}
+
+function updateGeneratedList() {
+  const list = document.getElementById('examGeneratedList');
+  let html = '';
+  examGeneratedQuestions.forEach((q, i) => {
+    const userAns = q._userAnswer || '（未作答）';
+    const correctAns = q.answer || '暂无';
+    const status = examAnswerStatus[i];
+    let isCorrect = status === 1;
+    const icon = status === 0 ? '⏭️' : (isCorrect ? '✅' : '❌');
+    html += `<div style="padding:10px 12px;margin-bottom:8px;background:#fafafa;border-radius:6px;border-left:3px solid ${isCorrect ? '#27ae60' : (status === 0 ? '#f39c12' : '#e74c3c')};">
+      <div style="font-size:13px;font-weight:600;margin-bottom:4px;">${icon} 第${i+1}题 [${q.type}]</div>
+      <div style="font-size:13px;color:#555;margin-bottom:4px;">${escapeHtml((q.content || '').substring(0, 80))}${(q.content || '').length > 80 ? '...' : ''}</div>
+      <div style="font-size:12px;color:#8B7355;">你的答案：${escapeHtml(userAns)} | 正确答案：${escapeHtml(correctAns)}</div>
+    </div>`;
+  });
+  list.innerHTML = html || '<p style="color:#999;font-size:14px;">暂无</p>';
+}
+
+function finishOneByOneExam() {
+  if (examGeneratedQuestions.length === 0) { showToast('还没有生成任何题目'); return; }
+  
+  // 切换到成绩视图
+  document.getElementById('examMainView').style.display = 'none';
+  document.getElementById('examFinalView').style.display = '';
+  
+  // 成绩卡片
+  const total = examGeneratedQuestions.length;
+  const wrong = total - examCorrectCount;
+  document.getElementById('examScoreCard').innerHTML = `
+    <h3 style="margin-bottom:12px;">🎉 答题完成！</h3>
+    <div style="font-size:36px;font-weight:700;color:#7A5C42;margin:8px 0;">${examCorrectCount} / ${total}</div>
+    <div style="color:#8B7355;font-size:14px;">正确 ${examCorrectCount} 题，错误 ${wrong} 题</div>
+    <div style="margin-top:16px;display:flex;gap:10px;justify-content:center;">
+      <button class="btn btn-primary" onclick="saveExam();showToast('试卷已保存！');">📥 保存试卷</button>
+      <button class="btn" onclick="resetExamView()">📝 再来一组</button>
+    </div>`;
+  
+  updateGeneratedList();
+  
+  // 组装试卷数据
+  currentExam = {
+    title: examSourceTitle,
+    questions: examGeneratedQuestions.map(q => ({
+      type: q.type, content: q.content, options: q.options, answer: q.answer
+    })),
+    date: new Date().toISOString(),
+    saveTime: Date.now(),
+    source: examSourceTitle.includes('延伸') ? 'extend' : (examSourceTitle.includes('整理') ? 'organize' : 'ai')
+  };
+}
+
+function resetExamView() {
+  document.getElementById('examFinalView').style.display = 'none';
+  document.getElementById('examMainView').style.display = 'none';
+  document.getElementById('examOneByOne').style.display = 'none';
+  document.getElementById('examPreview').style.display = 'none';
+  document.getElementById('examConfig').style.display = '';
+  document.getElementById('extendConfig').style.display = 'none';
+}
+
+async function handleOrganizeFile(e) {
+  const file = e.target.files[0];
+  if (!file) return;
+  try {
+    showToast('正在读取文件...');
+    const content = await parseFileContent(file);
+    document.getElementById('organizeTextInput').value = content;
+    showToast('文件读取成功');
+  } catch(err) {
+    showToast('文件读取失败：' + err.message);
+  }
+}
+
+async function organizeQuestionsToExam() {
+  const text = document.getElementById('organizeTextInput').value.trim();
+  if (!text) { showToast('请先输入或上传题目'); return; }
+  
+  showToast('正在整理试卷...');
+  const result = await callDeepSeek([
+    { role: 'user', content: `将以下题目整理成规范试卷格式（JSON），包含 title 和 questions 数组，每道题包含 type、content、options（如有）、answer：\n\n${text}` }
+  ]);
+  if (result) {
+    try {
+      const cleaned = cleanJsonResponse(result);
+      const exam = JSON.parse(cleaned);
+      currentExam = { title: exam.title || '整理试卷', questions: exam.questions, date: new Date().toISOString(), source: 'organize' };
+      enterExamMode(exam.questions, exam.title || '整理试卷');
+      showToast('整理成功！');
+    } catch(err) {
+      showToast('整理失败，请重试');
+      console.log('JSON解析失败:', result);
+    }
+  }
+}
+
+let extendFileContent = '';
+
+async function handleExtendFile(e) {
+  const file = e.target.files[0];
+  if (!file) return;
+  try {
+    showToast('正在读取文件...');
+    extendFileContent = await parseFileContent(file);
+    if (!extendFileContent.trim()) {
+      showToast('文件内容为空，请检查文件');
+      return;
+    }
+    document.getElementById('extendConfig').style.display = 'block';
+    showToast('文件读取成功，点击"生成延伸题"开始');
+  } catch(err) {
+    showToast('文件读取失败：' + err.message);
+  }
+}
+
+async function extendExamQuestions() {
+  if (!extendFileContent) { showToast('请先上传试卷文件'); return; }
+  showToast('正在生成延伸题...');
+  const count = document.getElementById('extendCount').value;
+  const diff = document.getElementById('extendDifficulty').value;
+  const result = await callDeepSeek([
+    { role: 'system', content: '你是一个专业的出题老师。请严格以JSON格式返回，不要包含任何其他文字。JSON格式：{"title":"试卷标题","questions":[{"type":"选择题","content":"题目内容","options":["A. xxx","B. xxx","C. xxx","D. xxx"],"answer":"A"},{"type":"填空题","content":"题目内容","answer":"答案"},{"type":"简答题","content":"题目内容","answer":"参考答案"}]}' },
+    { role: 'user', content: `请仔细阅读以下试卷内容，分析其中的知识点，然后针对每个知识点生成${count}道延伸题，难度为${diff}。返回JSON格式，包含title和questions数组。\n\n试卷内容：\n${extendFileContent}` }
+  ]);
+  if (result) {
+    try {
+      const cleaned = cleanJsonResponse(result);
+      const exam = JSON.parse(cleaned);
+      currentExam = { title: exam.title || '延伸试卷', questions: exam.questions, date: new Date().toISOString(), source: 'extend' };
+      enterExamMode(exam.questions, exam.title || '延伸试卷');
+      showToast('延伸题生成成功！');
+    } catch(err) {
+      showToast('生成失败，请重试');
+      console.log('JSON解析失败，AI返回:', result);
+    }
+  }
+}
+
+function showExamPreview(exam) {
+  currentAnswers = {};
+  isAnswering = false;
+  document.getElementById('scoreCard').style.display = 'none';
+  document.getElementById('startAnswerBtn').style.display = '';
+  document.getElementById('submitBtn').style.display = 'none';
+  document.getElementById('examPreviewTitle').textContent = exam.title;
+
+  let html = `<div class="exam-header"><h2>${exam.title}</h2><p>共 ${exam.questions.length} 题</p></div>`;
+  
+  exam.questions.forEach((q, i) => {
+    html += `<div class="question-item" id="q-${i}">
+      <div class="q-number">${i + 1}. [${q.type}]</div>
+      <div class="q-text">${q.content}</div>
+      <div id="q-answer-${i}">`;
+    
+    if (q.type === '选择题' && q.options) {
+      q.options.forEach((opt, oi) => {
+        html += `<div class="q-option" data-q="${i}" data-opt="${oi}" onclick="selectOption(${i}, ${oi})">${opt}</div>`;
+      });
+    } else if (q.type === '判断题') {
+      html += `<div class="q-option" data-q="${i}" onclick="selectJudge(${i}, '正确')">&#10004; 正确</div>`;
+      html += `<div class="q-option" data-q="${i}" onclick="selectJudge(${i}, '错误')">&#10008; 错误</div>`;
+    } else if (q.type === '填空题') {
+      html += `<input type="text" placeholder="请输入答案" id="fill-input-${i}">`;
+    } else if (q.type === '简答题') {
+      html += `<textarea placeholder="请输入答案" id="short-input-${i}"></textarea>`;
+    }
+    
+    html += `</div><div id="q-result-${i}"></div>`;
+    html += `<button class="ask-baigao-btn" onclick="askBaigaoAboutQuestion(${i})">🐱 问白糕</button>`;
+    html += `</div>`;
+  });
+
+  document.getElementById('examContent').innerHTML = html;
+  document.getElementById('examPreview').style.display = '';
+  document.getElementById('examPreview').scrollIntoView({ behavior: 'smooth' });
+}
+
+function selectOption(qIdx, optIdx) {
+  if (!isAnswering) return;
+  document.querySelectorAll(`[data-q="${qIdx}"]`).forEach(o => o.classList.remove('selected'));
+  document.querySelectorAll(`[data-q="${qIdx}"]`)[optIdx].classList.add('selected');
+  currentAnswers[qIdx] = optIdx;
+}
+
+function selectJudge(qIdx, value) {
+  if (!isAnswering) return;
+  document.querySelectorAll(`[data-q="${qIdx}"]`).forEach(o => o.classList.remove('selected'));
+  if (value === '正确') document.querySelectorAll(`[data-q="${qIdx}"]`)[0].classList.add('selected');
+  else document.querySelectorAll(`[data-q="${qIdx}"]`)[1].classList.add('selected');
+  currentAnswers[qIdx] = value;
+}
+
+function startAnswering() {
+  isAnswering = true;
+  document.getElementById('startAnswerBtn').style.display = 'none';
+  document.getElementById('submitBtn').style.display = '';
+  showToast('开始答题');
+}
+
+async function submitAnswers() {
+  if (!currentExam) return;
+  const btn = document.getElementById('submitBtn');
+  btn.disabled = true;
+  btn.textContent = 'AI 正在判分...';
+  showToast('AI 正在批改...');
+
+  let correct = 0;
+  let total = currentExam.questions.length;
+
+  for (let i = 0; i < currentExam.questions.length; i++) {
+    const q = currentExam.questions[i];
+    const userAnswer = currentAnswers[i];
+    const resultDiv = document.getElementById(`q-result-${i}`);
+    let isCorrect = false;
+
+    if (q.type === '选择题') {
+      const correctLetter = q.answer ? q.answer.charAt(0).toUpperCase() : '';
+      const correctIdx = q.options ? q.options.findIndex(o => o.startsWith(correctLetter)) : -1;
+      isCorrect = (userAnswer === correctIdx);
+    } else if (q.type === '判断题') {
+      isCorrect = (userAnswer === q.answer);
+    } else if (q.type === '填空题') {
+      const input = document.getElementById(`fill-input-${i}`);
+      const userText = input ? input.value.trim() : '';
+      isCorrect = (userText === q.answer);
+    } else if (q.type === '简答题') {
+      isCorrect = true;
+    }
+
+    if (isCorrect) correct++;
+    resultDiv.innerHTML = isCorrect ? '<span style="color:#4caf50;">✓ 正确</span>' : `<span style="color:#f44336;">✗ 错误，正确答案：${q.answer || '见解析'}</span>`;
+  }
+
+  document.getElementById('scoreCard').style.display = '';
+  document.getElementById('scoreCard').innerHTML = `<h3>得分：${correct}/${total}（${Math.round(correct/total*100)}分）</h3>`;
+  btn.textContent = '提交答卷';
+  btn.disabled = false;
+}
+
+function saveExam() {
+  if (!currentExam) return;
+  let exams = JSON.parse(localStorage.getItem('saved_exams') || '[]');
+  currentExam.saveTime = new Date().toISOString();
+  exams.push(currentExam);
+  localStorage.setItem('saved_exams', JSON.stringify(exams));
+  showToast('试卷已保存');
+  updateStats();
+  renderSavedExams();
+  if (typeof renderProfileExamList === 'function') renderProfileExamList();
+}
+
+// ========== 我的试卷 ==========
+function renderSavedExams() {
+  const exams = JSON.parse(localStorage.getItem('saved_exams') || '[]');
+  const container = document.getElementById('savedExamsList');
+  
+  if (exams.length === 0) {
+    container.innerHTML = '<div class="card" style="text-align:center;color:#8B7355;padding:40px;"><p>还没有保存的试卷</p><p style="font-size:14px;margin-top:8px;">生成试卷后点击"保存试卷"即可在这里查看</p></div>';
+    return;
+  }
+  
+  let html = '<div style="display:flex;flex-direction:column;gap:12px;">';
+  exams.forEach((exam, idx) => {
+    const date = exam.saveTime ? new Date(exam.saveTime).toLocaleString('zh-CN') : new Date(exam.date).toLocaleString('zh-CN');
+    const qCount = exam.questions ? exam.questions.length : 0;
+    const sourceMap = { 'ai': '资料出题', 'organize': '整理试卷', 'extend': '延伸出题' };
+    const source = sourceMap[exam.source] || '未知';
+    
+    html += `<div class="card" style="display:flex;justify-content:space-between;align-items:center;padding:16px;">
+      <div>
+        <h3 style="margin:0 0 4px 0;font-size:16px;">${escapeHtml(exam.title || '未命名试卷')}</h3>
+        <p style="margin:0;font-size:13px;color:#8B7355;">${source} · ${qCount} 题 · ${date}</p>
+      </div>
+      <div style="display:flex;gap:8px;">
+        <button class="btn" onclick="openSavedExam(${idx})">查看</button>
+        <button class="btn" onclick="deleteSavedExam(${idx})" style="color:#c0392b;">删除</button>
+      </div>
+    </div>`;
+  });
+  html += '</div>';
+  container.innerHTML = html;
+}
+
+function openSavedExam(idx) {
+  const exams = JSON.parse(localStorage.getItem('saved_exams') || '[]');
+  const exam = exams[idx];
+  if (!exam) return;
+  
+  currentExam = exam;
+  currentAnswers = {};
+  isAnswering = false;
+  
+  const preview = document.getElementById('savedExamPreview');
+  document.getElementById('scoreCard').style.display = 'none';
+  document.getElementById('startAnswerBtn').style.display = '';
+  document.getElementById('submitBtn').style.display = 'none';
+  
+  let html = `<div class="card">
+    <h2>${escapeHtml(exam.title || '未命名试卷')}</h2>
+    <div id="examContent">`;
+  
+  exam.questions.forEach((q, i) => {
+    html += `<div class="question-item" id="q-${i}">
+      <div class="q-number">${i + 1}. [${q.type}]</div>
+      <div class="q-text">${escapeHtml(q.content)}</div>
+      <div id="q-answer-${i}">`;
+    
+    if (q.type === '选择题' && q.options) {
+      q.options.forEach((opt, oi) => {
+        html += `<div class="q-option" data-q="${i}" data-opt="${oi}" onclick="selectOption(${i}, ${oi})">${opt}</div>`;
+      });
+    } else if (q.type === '判断题') {
+      html += `<div class="q-option" data-q="${i}" onclick="selectJudge(${i}, '正确')">✔ 正确</div>`;
+      html += `<div class="q-option" data-q="${i}" onclick="selectJudge(${i}, '错误')">✘ 错误</div>`;
+    } else if (q.type === '填空题') {
+      html += `<input type="text" placeholder="请输入答案" id="fill-input-${i}">`;
+    } else if (q.type === '简答题') {
+      html += `<textarea placeholder="请输入答案" id="short-input-${i}"></textarea>`;
+    }
+    
+    html += `</div><div id="q-result-${i}"></div>`;
+    html += `<button class="ask-baigao-btn" onclick="askBaigaoAboutQuestion(${i})">🐱 问白糕</button>`;
+    html += `</div>`;
+  });
+  
+  html += `</div>
+    <div style="margin-top:16px;display:flex;gap:10px;">
+      <button class="btn" onclick="startAnswering()">开始答题</button>
+      <button class="btn btn-primary" id="submitBtn" style="display:none;" onclick="submitAnswers()">提交答卷</button>
+    </div>
+    <div id="scoreCard" style="display:none;margin-top:16px;padding:16px;background:#FFF8F0;border-radius:8px;"></div>
+  </div>`;
+  
+  preview.innerHTML = html;
+  preview.style.display = '';
+  preview.scrollIntoView({ behavior: 'smooth' });
+}
+
+function deleteSavedExam(idx) {
+  if (!confirm('确定要删除这份试卷吗？')) return;
+  let exams = JSON.parse(localStorage.getItem('saved_exams') || '[]');
+  exams.splice(idx, 1);
+  localStorage.setItem('saved_exams', JSON.stringify(exams));
+  showToast('已删除');
+  renderSavedExams();
+  updateStats();
+}
+
+// ========== Forum System ==========
+const SCHOOLS = [
+  { name: "全部", color: "#666" },
+  { name: "清华大学", color: "#8b0000" },
+  { name: "北京大学", color: "#8b0000" },
+  { name: "复旦大学", color: "#003399" },
+  { name: "浙江大学", color: "#003399" },
+  { name: "上海交大", color: "#8b0000" },
+  { name: "武汉大学", color: "#006400" },
+  { name: "其他", color: "#666" }
+];
+
+const ANON_ANIMALS = ["白猫","橘猫","黑猫","柴犬","柯基","仓鼠","兔子","熊猫","企鹅","水母","松鼠","鹦鹉","狐狸","考拉","海豚"];
+
+function getSchoolColor(name) {
+  const s = SCHOOLS.find(s => s.name === name);
+  return s ? s.color : "#666";
+}
+
+function getSchoolAbbr(name) {
+  if (name === "全部") return "全";
+  if (name === "其他") return "他";
+  return name.substring(0, 2);
+}
+
+function getMyAnonId() {
+  let id = localStorage.getItem('forum_my_anon_id');
+  if (!id) { refreshAnonId(); id = localStorage.getItem('forum_my_anon_id'); }
+  return id;
+}
+
+function refreshAnonId() {
+  const animal = ANON_ANIMALS[Math.floor(Math.random() * ANON_ANIMALS.length)];
+  const num = Math.floor(Math.random() * 9000) + 1000;
+  const id = `匿名${animal}#${num}`;
+  localStorage.setItem('forum_my_anon_id', id);
+  if (document.getElementById('forumMyAnonId')) {
+    document.getElementById('forumMyAnonId').textContent = id;
+  }
+  return id;
+}
+
+function getAnonColor(anonId) {
+  let hash = 0;
+  for (let i = 0; i < anonId.length; i++) hash = anonId.charCodeAt(i) + ((hash << 5) - hash);
+  const h = Math.abs(hash) % 360;
+  return `hsl(${h}, 50%, 50%)`;
+}
+
+function getAnonInitial(anonId) {
+  const match = anonId.match(/匿名(.+?)#/);
+  return match ? match[1].charAt(0) : "匿";
+}
+
+function getForumPosts() {
+  return JSON.parse(localStorage.getItem('forum_posts') || '[]');
+}
+
+function saveForumPosts(posts) {
+  localStorage.setItem('forum_posts', JSON.stringify(posts));
+}
+
+function getPrivateMessages() {
+  return JSON.parse(localStorage.getItem('forum_private_msgs') || '{}');
+}
+
+function savePrivateMessages(msgs) {
+  localStorage.setItem('forum_private_msgs', JSON.stringify(msgs));
+}
+
+// ========== Friend System ==========
+function getFriends() {
+  return JSON.parse(localStorage.getItem('forum_friends') || '[]');
+}
+
+function saveFriends(friends) {
+  localStorage.setItem('forum_friends', JSON.stringify(friends));
+}
+
+function getFriendRequests() {
+  return JSON.parse(localStorage.getItem('forum_friend_requests') || '[]');
+}
+
+function saveFriendRequests(requests) {
+  localStorage.setItem('forum_friend_requests', JSON.stringify(requests));
+}
+
+function isFriend(anonId) {
+  return getFriends().includes(anonId);
+}
+
+function sendFriendRequest(targetAnonId) {
+  const myId = getMyAnonId();
+  if (targetAnonId === myId) { showToast('不能加自己为好友哦'); return; }
+  if (isFriend(targetAnonId)) { showToast('已经是好友了'); return; }
+  
+  const requests = getFriendRequests();
+  const existing = requests.find(r => r.from === myId && r.to === targetAnonId && r.status === 'pending');
+  if (existing) { showToast('已发送过好友请求，等待对方同意'); return; }
+  
+  requests.push({ from: myId, to: targetAnonId, status: 'pending', timestamp: Date.now() });
+  saveFriendRequests(requests);
+  showToast('已向 ' + targetAnonId + ' 发送好友请求！');
+  
+  // 模拟对方自动同意
+  setTimeout(() => {
+    const reqs = getFriendRequests();
+    const req = reqs.find(r => r.from === myId && r.to === targetAnonId && r.status === 'pending');
+    if (req) {
+      req.status = 'accepted';
+      saveFriendRequests(reqs);
+      const friends = getFriends();
+      if (!friends.includes(targetAnonId)) {
+        friends.push(targetAnonId);
+        saveFriends(friends);
+      }
+      showToast(targetAnonId + ' 已同意你的好友请求！');
+      renderChatContacts();
+      if (forumCurrentPostId) viewPost(forumCurrentPostId);
+    }
+  }, 1500);
+}
+
+function acceptFriendRequest(fromAnonId) {
+  const requests = getFriendRequests();
+  const req = requests.find(r => r.from === fromAnonId && r.status === 'pending');
+  if (req) {
+    req.status = 'accepted';
+    saveFriendRequests(requests);
+    const friends = getFriends();
+    if (!friends.includes(fromAnonId)) {
+      friends.push(fromAnonId);
+      saveFriends(friends);
+    }
+    showToast('已添加 ' + fromAnonId + ' 为好友！');
+    renderChatContacts();
+  }
+}
+
+function rejectFriendRequest(fromAnonId) {
+  const requests = getFriendRequests();
+  const filtered = requests.filter(r => !(r.from === fromAnonId && r.status === 'pending'));
+  saveFriendRequests(filtered);
+  showToast('已拒绝 ' + fromAnonId + ' 的好友请求');
+  renderChatContacts();
+}
+
+function removeFriend(anonId) {
+  if (!confirm('确定要删除好友 ' + anonId + ' 吗？')) return;
+  const friends = getFriends().filter(f => f !== anonId);
+  saveFriends(friends);
+  const myId = getMyAnonId();
+  const chatKey = [myId, anonId].sort().join(':::');
+  const msgs = getPrivateMessages();
+  delete msgs[chatKey];
+  savePrivateMessages(msgs);
+  if (forumCurrentChatUser === anonId) {
+    forumCurrentChatUser = null;
+    document.getElementById('chatWindow').innerHTML = '<div class="chat-empty">选择一个联系人开始聊天</div>';
+  }
+  showToast('已删除好友 ' + anonId);
+  renderChatContacts();
+}
+
+function acceptFriendFromModal() {
+  if (pendingFriendRequestFrom) {
+    acceptFriendRequest(pendingFriendRequestFrom);
+    pendingFriendRequestFrom = null;
+  }
+  document.getElementById('friendRequestModal').style.display = 'none';
+}
+
+function rejectFriendFromModal() {
+  if (pendingFriendRequestFrom) {
+    rejectFriendRequest(pendingFriendRequestFrom);
+    pendingFriendRequestFrom = null;
+  }
+  document.getElementById('friendRequestModal').style.display = 'none';
+}
+
+// ========== Forum Rendering ==========
+function initForum() {
+  document.getElementById('forumMyAnonId').textContent = getMyAnonId();
+  renderSchoolBar();
+  renderForumPosts();
+  ensureSamplePosts();
+  renderChatContacts();
+}
+
+function ensureSamplePosts() {
+  const posts = getForumPosts();
+  if (posts.length > 0) return;
+  const samples = [
+    { school: "清华大学", anonId: "匿名橘猫#3847", title: "期末高数怎么复习啊救命", content: "下周就考试了，积分完全不会做，有没有大佬分享一下复习方法😭", likes: 12 },
+    { school: "北京大学", anonId: "匿名柴犬#7291", title: "图书馆占座太卷了", content: "早上6点去图书馆已经没位了，大家都是几点去的啊？", likes: 28 },
+    { school: "复旦大学", anonId: "匿名熊猫#1563", title: "推荐一个超好用的笔记方法", content: "康奈尔笔记法真的好用！左边写关键词，右边写详细内容，底部写总结。", likes: 45 }
+  ];
+  const now = Date.now();
+  samples.forEach((s, i) => {
+    posts.push({
+      id: now + i,
+      school: s.school,
+      anonId: s.anonId,
+      title: s.title,
+      content: s.content,
+      timestamp: now - (samples.length - i) * 3600000,
+      replies: [],
+      likes: s.likes
+    });
+  });
+  saveForumPosts(posts);
+}
+
+function renderSchoolBar() {
+  const bar = document.getElementById('schoolBar');
+  bar.innerHTML = SCHOOLS.map(s => {
+    const abbr = getSchoolAbbr(s.name);
+    const isActive = forumCurrentSchool === s.name ? 'active' : '';
+    return `<div class="school-badge ${isActive}" onclick="selectSchool('${s.name}')">
+      <div class="school-icon" style="background:${s.color}">${abbr}</div>
+      <span>${s.name}</span>
+    </div>`;
+  }).join('');
+}
+
+function selectSchool(name) {
+  forumCurrentSchool = name;
+  renderSchoolBar();
+  renderForumPosts();
+  backToPostList();
+}
+
+function renderForumPosts() {
+  let posts = getForumPosts();
+  if (forumCurrentSchool !== "全部") {
+    posts = posts.filter(p => p.school === forumCurrentSchool);
+  }
+  posts.sort((a, b) => b.timestamp - a.timestamp);
+
+  const list = document.getElementById('forumPostList');
+  if (posts.length === 0) {
+    list.innerHTML = '<div style="padding:40px;text-align:center;color:#999;">这个频道还没有帖子，来发第一帖吧！</div>';
+    return;
+  }
+
+  list.innerHTML = posts.map(p => {
+    const color = getAnonColor(p.anonId);
+    const initial = getAnonInitial(p.anonId);
+    const time = formatForumTime(p.timestamp);
+    return `<div class="forum-post-card" onclick="viewPost(${p.id})">
+      <div class="post-card-header">
+        <div class="post-card-avatar" style="background:${color}">${initial}</div>
+        <div>
+          <div class="anon-name">${escapeHtml(p.anonId)}</div>
+          <div class="post-time">${time}</div>
+        </div>
+        <div class="post-card-school" style="background:${getSchoolColor(p.school)}15;color:${getSchoolColor(p.school)}">${p.school}</div>
+      </div>
+      <div class="post-card-title">${escapeHtml(p.title)}</div>
+      <div class="post-card-preview">${escapeHtml(p.content)}</div>
+      <div class="post-card-footer">
+        <span>❤ ${p.likes || 0}</span>
+        <span>💬 ${(p.replies || []).length}</span>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function formatForumTime(ts) {
+  const diff = Date.now() - ts;
+  if (diff < 60000) return "刚刚";
+  if (diff < 3600000) return Math.floor(diff / 60000) + "分钟前";
+  if (diff < 86400000) return Math.floor(diff / 3600000) + "小时前";
+  if (diff < 604800000) return Math.floor(diff / 86400000) + "天前";
+  return new Date(ts).toLocaleDateString();
+}
+
+function viewPost(postId) {
+  const posts = getForumPosts();
+  const post = posts.find(p => p.id === postId);
+  if (!post) return;
+  forumCurrentPostId = postId;
+
+  document.getElementById('forumPostListWrap').classList.add('hidden');
+  document.getElementById('forumPostDetail').classList.add('active');
+
+  const color = getAnonColor(post.anonId);
+  const initial = getAnonInitial(post.anonId);
+  const time = formatForumTime(post.timestamp);
+  const likedPosts = JSON.parse(localStorage.getItem('forum_liked_posts') || '[]');
+  const isLiked = likedPosts.includes(postId);
+  const friendBtn = isFriend(post.anonId) 
+    ? `<div class="action-btn" onclick="openPrivateChat('${escapeHtml(post.anonId)}')">💬 私聊TA</div>`
+    : `<div class="action-btn" onclick="sendFriendRequest('${escapeHtml(post.anonId)}')">➕ 加好友</div>`;
+
+  let html = `
+    <div class="post-card-header" style="margin-bottom:12px;">
+      <div class="post-card-avatar" style="background:${color};width:40px;height:40px;font-size:16px;">${initial}</div>
+      <div>
+        <div class="anon-name" style="font-size:14px;">${escapeHtml(post.anonId)}</div>
+        <div class="post-time">${time}</div>
+      </div>
+      <div class="post-card-school" style="background:${getSchoolColor(post.school)}15;color:${getSchoolColor(post.school)}">${post.school}</div>
+    </div>
+    <h3 style="font-size:17px;font-weight:700;margin-bottom:8px;">${escapeHtml(post.title)}</h3>
+    <div class="post-detail-content">${escapeHtml(post.content)}</div>
+    <div class="post-detail-actions">
+      <div class="action-btn ${isLiked ? 'liked' : ''}" onclick="togglePostLike(${postId})">❤ ${isLiked ? '已赞' : '点赞'} ${post.likes || 0}</div>
+      ${friendBtn}
+    </div>
+    <div class="reply-section">
+      <h4>评论 (${(post.replies || []).length})</h4>
+      ${(post.replies || []).map(r => {
+        const rc = getAnonColor(r.anonId);
+        const ri = getAnonInitial(r.anonId);
+        return `<div class="reply-item">
+          <div class="reply-avatar" style="background:${rc}">${ri}</div>
+          <div class="reply-content">
+            <div class="reply-name">${escapeHtml(r.anonId)}<span class="reply-time">${formatForumTime(r.timestamp)}</span></div>
+            <div class="reply-text">${escapeHtml(r.content)}</div>
+            <div style="margin-top:4px;">
+              <button onclick="event.stopPropagation();${isFriend(r.anonId) ? "openPrivateChat('" + escapeHtml(r.anonId) + "')" : "sendFriendRequest('" + escapeHtml(r.anonId) + "')"}" style="font-size:11px;padding:2px 8px;border-radius:10px;border:1px solid #ddd;background:#f8f8f8;cursor:pointer;">${isFriend(r.anonId) ? '💬 私聊' : '➕ 加好友'}</button>
+            </div>
+          </div>
+        </div>`;
+      }).join('')}
+      <div class="reply-input-area">
+        <input type="text" id="replyInput" placeholder="写下你的评论..." onkeydown="if(event.key==='Enter')submitReply(${postId})">
+        <button class="btn btn-primary" onclick="submitReply(${postId})">发送</button>
+      </div>
+    </div>
+  `;
+
+  document.getElementById('postDetailContent').innerHTML = html;
+}
+
+function backToPostList() {
+  forumCurrentPostId = null;
+  document.getElementById('forumPostDetail').classList.remove('active');
+  document.getElementById('forumPostListWrap').classList.remove('hidden');
+}
+
+function togglePostLike(postId) {
+  const posts = getForumPosts();
+  const post = posts.find(p => p.id === postId);
+  if (!post) return;
+  let liked = JSON.parse(localStorage.getItem('forum_liked_posts') || '[]');
+  if (liked.includes(postId)) {
+    liked = liked.filter(id => id !== postId);
+    post.likes = Math.max(0, (post.likes || 1) - 1);
+  } else {
+    liked.push(postId);
+    post.likes = (post.likes || 0) + 1;
+  }
+  localStorage.setItem('forum_liked_posts', JSON.stringify(liked));
+  saveForumPosts(posts);
+  viewPost(postId);
+}
+
+function submitReply(postId) {
+  const input = document.getElementById('replyInput');
+  const content = input.value.trim();
+  if (!content) return;
+  
+  const posts = getForumPosts();
+  const post = posts.find(p => p.id === postId);
+  if (!post) return;
+  if (!post.replies) post.replies = [];
+  post.replies.push({ anonId: getMyAnonId(), content, timestamp: Date.now() });
+  saveForumPosts(posts);
+  viewPost(postId);
+}
+
+function switchForumTab(tab) {
+  document.querySelectorAll('.forum-tab').forEach(t => t.classList.remove('active'));
+  event.currentTarget.classList.add('active');
+  
+  if (tab === 'public') {
+    document.getElementById('forumPublic').style.display = '';
+    document.getElementById('forumPrivateChat').classList.remove('active');
+  } else {
+    document.getElementById('forumPublic').style.display = 'none';
+    document.getElementById('forumPrivateChat').classList.add('active');
+    renderChatContacts();
+  }
+}
+
+function renderChatContacts() {
+  const msgs = getPrivateMessages();
+  const myId = getMyAnonId();
+  const friends = getFriends();
+  const friendRequests = getFriendRequests();
+  const pendingRequests = friendRequests.filter(r => r.to === myId && r.status === 'pending');
+
+  const list = document.getElementById('chatContactList');
+  let html = '';
+  
+  if (pendingRequests.length > 0) {
+    html += '<div class="friend-requests-bar"><h4>🔔 好友请求 (' + pendingRequests.length + ')</h4>';
+    pendingRequests.forEach(req => {
+      const color = getAnonColor(req.from);
+      const initial = getAnonInitial(req.from);
+      html += `<div class="friend-request-item">
+        <div class="friend-req-avatar" style="background:${color}">${initial}</div>
+        <div class="friend-req-info">
+          <div class="friend-req-name">${escapeHtml(req.from)}</div>
+          <div class="friend-req-time">${formatForumTime(req.timestamp)}</div>
+        </div>
+        <div class="friend-req-actions">
+          <button class="friend-req-btn accept" onclick="acceptFriendRequest('${escapeHtml(req.from)}')">接受</button>
+          <button class="friend-req-btn reject" onclick="rejectFriendRequest('${escapeHtml(req.from)}')">拒绝</button>
+        </div>
+      </div>`;
+    });
+    html += '</div>';
+  }
+  
+  if (friends.length === 0) {
+    html += '<div style="padding:30px 10px;text-align:center;color:#999;">还没有好友<br>在帖子下点击「➕ 加好友」开始</div>';
+  } else {
+    html += '<div class="friend-list-header">我的好友 (' + friends.length + ')</div>';
+    html += friends.map(c => {
+      const color = getAnonColor(c);
+      const initial = getAnonInitial(c);
+      const chatKey = [myId, c].sort().join(':::');
+      const chatMsgs = msgs[chatKey] || [];
+      const lastMsg = chatMsgs.length > 0 ? chatMsgs[chatMsgs.length - 1].content : '暂无消息';
+      const isActive = forumCurrentChatUser === c ? 'active' : '';
+      return `<div class="chat-contact-item ${isActive}" onclick="openChatWith('${escapeHtml(c)}')">
+        <div class="chat-contact-avatar" style="background:${color}">${initial}</div>
+        <div class="chat-contact-info">
+          <div class="chat-contact-name">${escapeHtml(c)}</div>
+          <div class="chat-contact-last">${escapeHtml(lastMsg.substring(0, 20))}</div>
+        </div>
+        <button class="remove-friend-btn" onclick="event.stopPropagation();removeFriend('${escapeHtml(c)}')" title="删除好友">×</button>
+      </div>`;
+    }).join('');
+  }
+  
+  list.innerHTML = html;
+}
+
+function openPrivateChat(anonId) {
+  const myId = getMyAnonId();
+  if (anonId === myId) { showToast('不能私聊自己哦'); return; }
+  if (!isFriend(anonId)) { showToast('请先添加对方为好友才能私聊'); sendFriendRequest(anonId); return; }
+  switchForumTab('private');
+  document.querySelectorAll('.forum-tab')[1].classList.add('active');
+  document.querySelectorAll('.forum-tab')[0].classList.remove('active');
+  document.getElementById('forumPublic').style.display = 'none';
+  document.getElementById('forumPrivateChat').classList.add('active');
+  openChatWith(anonId);
+}
+
+function openChatWith(anonId) {
+  forumCurrentChatUser = anonId;
+  renderChatContacts();
+  const myId = getMyAnonId();
+  const chatKey = [myId, anonId].sort().join(':::');
+  const msgs = getPrivateMessages();
+  const chatMsgs = msgs[chatKey] || [];
+  const color = getAnonColor(anonId);
+  const initial = getAnonInitial(anonId);
+
+  document.getElementById('chatWindow').innerHTML = `
+    <div class="chat-window-header">${escapeHtml(anonId)}</div>
+    <div class="chat-window-body" id="chatBody">
+      ${chatMsgs.length === 0 ? '<div style="color:#bbb;text-align:center;padding:20px;">开始对话吧</div>' :
+        chatMsgs.map(m => `<div class="chat-bubble ${m.from === myId ? 'mine' : 'other'}">${escapeHtml(m.content)}</div>`).join('')
+      }
+    </div>
+    <div class="chat-window-input">
+      <input type="text" id="chatInput" placeholder="发消息..." onkeydown="if(event.key==='Enter')sendPrivateMsg()">
+      <button class="btn btn-primary" onclick="sendPrivateMsg()">发送</button>
+    </div>
+  `;
+  const body = document.getElementById('chatBody');
+  if (body) body.scrollTop = body.scrollHeight;
+}
+
+function sendPrivateMsg() {
+  const input = document.getElementById('chatInput');
+  const content = input.value.trim();
+  if (!content || !forumCurrentChatUser) return;
+  const myId = getMyAnonId();
+  const chatKey = [myId, forumCurrentChatUser].sort().join(':::');
+  const msgs = getPrivateMessages();
+  if (!msgs[chatKey]) msgs[chatKey] = [];
+  msgs[chatKey].push({ from: myId, content, timestamp: Date.now() });
+  savePrivateMessages(msgs);
+  input.value = '';
+  openChatWith(forumCurrentChatUser);
+}
+
+// ========== Audio Recorder ==========
+let isRecording = false;
+let mediaRecorder = null;
+let audioChunks = [];
+let recTimerInterval = null;
+let recStartTime = null;
+let liveStream = null;
+let recognition = null;
+let useFallbackMode = false;
+let livePartialTranscript = '';
+let isRecognizingLive = false;
+let pendingLiveRecognition = false;
+let liveRecognitionTimer = null;
+
+function switchRecMode(mode) {
+  document.getElementById('recLivePanel').style.display = mode === 'live' ? '' : 'none';
+  document.getElementById('recUploadPanel').style.display = mode === 'upload' ? '' : 'none';
+  document.getElementById('recModeBtn').className = mode === 'live' ? 'btn btn-primary' : 'btn';
+  document.getElementById('uploadModeBtn').className = mode === 'upload' ? 'btn btn-primary' : 'btn';
+}
+
+// === DashScope ASR (Qwen3-ASR-Flash) ===
+// 后端地址配置（部署到服务器时修改此处即可）
+// 空字符串 = 同域名（前后端部署在一起）
+// 如需分离部署，填写后端地址如 'https://your-app.onrender.com'
+const API_BASE_URL = '';
+
+async function callDashScopeASR(audioBlob) {
+  // 优先调用本地后端，保护 API Key 不暴露在前端
+  try {
+    const formData = new FormData();
+    const ext = audioBlob.type.includes('webm') ? 'webm' :
+                audioBlob.type.includes('ogg') ? 'ogg' :
+                audioBlob.type.includes('mp3') ? 'mp3' :
+                audioBlob.type.includes('mp4') || audioBlob.type.includes('m4a') ? 'm4a' :
+                audioBlob.type.includes('wav') ? 'wav' : 'webm';
+    formData.append('audio_file', audioBlob, 'recording.' + ext);
+
+    const response = await fetch(API_BASE_URL + '/api/asr', {
+      method: 'POST',
+      body: formData
+    });
+
+    if (!response.ok) {
+      const errData = await response.json().catch(() => ({}));
+      console.error('后端 ASR 错误:', errData);
+      throw new Error(errData.error || ('HTTP ' + response.status));
+    }
+
+    const data = await response.json();
+    if (data.text) return data.text;
+  } catch (e) {
+    console.log('后端 ASR 失败，回退到 DashScope:', e.message);
+  }
+
+  // 回退：直接调用 DashScope（需配置 API Key）
+  const apiKey = getDashScopeApiKey();
+  if (!apiKey) {
+    showToast('后端服务未启动且未配置 DashScope API Key');
+    return null;
+  }
+
+  const dataUrl = await blobToBase64(audioBlob);
+  const base64 = dataUrl.split(',')[1];
+  const mimeType = audioBlob.type || 'audio/webm';
+  let audioFormat = 'wav';
+  if (mimeType.includes('webm')) audioFormat = 'webm';
+  else if (mimeType.includes('ogg')) audioFormat = 'ogg';
+  else if (mimeType.includes('mp3')) audioFormat = 'mp3';
+  else if (mimeType.includes('mp4') || mimeType.includes('m4a')) audioFormat = 'mp4';
+  else if (mimeType.includes('wav')) audioFormat = 'wav';
+
+  const response = await fetch('https://dashscope.aliyuncs.com/compatible-mode/v1/chat/completions', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': 'Bearer ' + apiKey
+    },
+    body: JSON.stringify({
+      model: 'qwen3-asr-flash',
+      messages: [{
+        role: 'user',
+        content: [{
+          type: 'input_audio',
+          input_audio: {
+            data: base64,
+            format: audioFormat
+          }
+        }]
+      }]
+    })
+  });
+
+  if (!response.ok) {
+    const errData = await response.json().catch(() => ({}));
+    console.error('DashScope ASR 错误:', errData);
+    throw new Error(errData.error?.message || ('HTTP ' + response.status));
+  }
+
+  const data = await response.json();
+  return data.choices?.[0]?.message?.content || null;
+}
+
+function blobToBase64(blob) {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onloadend = () => resolve(reader.result);
+    reader.onerror = reject;
+    reader.readAsDataURL(blob);
+  });
+}
+
+// === 实时录音模式 ===
+function toggleLiveRecord() {
+  if (isRecording) { stopLiveRecord(); } else { startLiveRecord(); }
+}
+
+async function startLiveRecord() {
+  // 优先使用 Web Speech API 实现实时转写
+  const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+  
+  if (SpeechRecognition) {
+    // 使用 Web Speech API 进行实时转写
+    recognition = new SpeechRecognition();
+    recognition.continuous = true;
+    recognition.interimResults = true;
+    recognition.lang = 'zh-CN';
+    
+    let finalTranscript = '';
+    
+    recognition.onresult = (event) => {
+      let interimTranscript = '';
+      for (let i = event.resultIndex; i < event.results.length; i++) {
+        const transcript = event.results[i][0].transcript;
+        if (event.results[i].isFinal) {
+          finalTranscript += transcript;
+        } else {
+          interimTranscript += transcript;
+        }
+      }
+      // 实时显示：已确认的文字 + 临时的灰色文字
+      let displayText = '<span class="live-final">' + escapeHtml(finalTranscript) + '</span>';
+      if (interimTranscript) {
+        displayText += '<span class="live-interim">' + escapeHtml(interimTranscript) + '</span>';
+      }
+      const el = document.getElementById('liveTranscript');
+      el.innerHTML = displayText;
+      el.scrollTop = el.scrollHeight;
+    };
+    
+    recognition.onerror = (event) => {
+      console.error('Speech recognition error:', event.error);
+      if (event.error === 'no-speech') {
+        // 忽略无语音错误，继续录音
+        return;
+      }
+      if (event.error === 'aborted') {
+        return; // 被中止也忽略
+      }
+      // 致命错误（not-allowed, service-not-allowed, network 等），自动降级到 MediaRecorder
+      console.warn('Web Speech API 失败，自动降级到 MediaRecorder 模式');
+      isRecording = false;
+      window._speechApiFailed = true;
+      window._currentRecognition = null;
+      window._getFinalTranscript = null;
+      try { recognition.stop(); } catch(e) {}
+      document.getElementById('liveTranscript').innerHTML = '<span style="color:#e67e22;">⚠️ 浏览器实时识别不可用（' + event.error + '），已切换到录音转写模式...</span>';
+      setTimeout(() => { startMediaRecorderFallback(); }, 500);
+    };
+    
+    recognition.onend = () => {
+      // 如果是因为降级而停止，不再重启
+      if (window._speechApiFailed) {
+        window._speechApiFailed = false;
+        return;
+      }
+      // 如果还在录音状态，自动重启（处理浏览器自动停止的情况）
+      if (isRecording) {
+        try {
+          recognition.start();
+        } catch (e) {
+          // 重启失败，降级到 MediaRecorder
+          console.warn('Web Speech API 重启失败，降级到 MediaRecorder');
+          isRecording = false;
+          document.getElementById('liveTranscript').innerHTML = '<span style="color:#e67e22;">⚠️ 实时识别中断，已切换到录音转写模式...</span>';
+          setTimeout(() => { startMediaRecorderFallback(); }, 500);
+        }
+      }
+    };
+    
+    try {
+      recognition.start();
+      isRecording = true;
+      
+      document.getElementById('liveTranscript').innerHTML = '<span style="color:#27ae60;font-size:15px;">🎙️ 正在录音，请开始说话...</span><br><span style="color:#666;font-size:13px;">实时转写将在此显示</span>';
+      document.getElementById('liveNotes').innerHTML = '<span style="color:#999;">录音结束后自动整理笔记...</span>';
+      document.getElementById('recStartBtn').style.background = '#c0392b';
+      document.getElementById('recStartBtn').textContent = '⏹';
+      document.getElementById('recStatusDot').style.display = '';
+      document.getElementById('recStatusDot').classList.add('rec-pulse');
+      
+      recStartTime = Date.now();
+      document.getElementById('recTimer').textContent = '00:00';
+      recTimerInterval = setInterval(() => {
+        const elapsed = Math.floor((Date.now() - recStartTime) / 1000);
+        const m = String(Math.floor(elapsed / 60)).padStart(2, '0');
+        const s = String(elapsed % 60).padStart(2, '0');
+        document.getElementById('recTimer').textContent = m + ':' + s;
+      }, 1000);
+      
+      // 保存 finalTranscript 的引用，供 stopLiveRecord 使用
+      window._currentRecognition = recognition;
+      window._getFinalTranscript = () => finalTranscript;
+      
+    } catch (e) {
+      console.warn('Web Speech API start 失败，降级到 MediaRecorder:', e.message);
+      document.getElementById('liveTranscript').innerHTML = '<span style="color:#e67e22;">⚠️ 浏览器语音识别启动失败，已切换到录音转写模式...</span>';
+      setTimeout(() => { startMediaRecorderFallback(); }, 500);
+    }
+  } else {
+    // 降级方案：使用 MediaRecorder + DashScope（非实时）
+    document.getElementById('liveTranscript').innerHTML = '<span style="color:#e67e22;">⚠️ 浏览器不支持实时语音识别，将使用录音后识别模式</span>';
+    await startMediaRecorderFallback();
+  }
+}
+
+// 降级方案：MediaRecorder + DashScope（近实时转写）
+async function startMediaRecorderFallback() {
+  try {
+    liveStream = await navigator.mediaDevices.getUserMedia({ audio: true });
+  } catch (e) {
+    const msg = e.name === 'NotAllowedError' ? '麦克风权限被拒绝，请在浏览器设置中允许麦克风访问' :
+                e.name === 'NotFoundError' ? '未找到麦克风设备' : '麦克风访问失败：' + e.message;
+    document.getElementById('liveTranscript').innerHTML = '<span style="color:#e74c3c;">❌ ' + msg + '</span>';
+    return;
+  }
+  
+  const mimeTypes = ['audio/webm;codecs=opus', 'audio/webm', 'audio/ogg;codecs=opus', 'audio/mp4', 'audio/wav'];
+  let selectedMime = '';
+  for (const mt of mimeTypes) {
+    if (MediaRecorder.isTypeSupported(mt)) { selectedMime = mt; break; }
+  }
+  
+  const options = selectedMime ? { mimeType: selectedMime } : {};
+  mediaRecorder = new MediaRecorder(liveStream, options);
+  audioChunks = [];
+  livePartialTranscript = '';
+  isRecognizingLive = false;
+  pendingLiveRecognition = false;
+  
+  mediaRecorder.ondataavailable = (e) => {
+    if (e.data.size > 0) {
+      audioChunks.push(e.data);
+      // 每收到新音频片段，触发一次识别
+      scheduleLiveRecognition();
+    }
+  };
+  
+  mediaRecorder.onstop = async () => {
+    if (liveStream) liveStream.getTracks().forEach(t => t.stop());
+    if (liveRecognitionTimer) { clearTimeout(liveRecognitionTimer); liveRecognitionTimer = null; }
+    
+    const audioBlob = new Blob(audioChunks, { type: mediaRecorder.mimeType || 'audio/webm' });
+    
+    if (audioBlob.size < 1000) {
+      document.getElementById('liveTranscript').innerHTML = '<span style="color:#e74c3c;">录音时间太短或没有检测到声音，请重试</span>';
+      return;
+    }
+    
+    // 等待正在进行的识别完成
+    if (isRecognizingLive) {
+      document.getElementById('liveTranscript').innerHTML = 
+        (livePartialTranscript ? '<span class="live-final">' + escapeHtml(livePartialTranscript) + '</span>' : '') +
+        '<span class="live-recognizing"> ⏳ 最终识别中...</span>';
+      await new Promise(r => setTimeout(r, 500));
+      // 再等最多10秒
+      for (let i = 0; i < 20 && isRecognizingLive; i++) {
+        await new Promise(r => setTimeout(r, 500));
+      }
+    }
+    
+    // 最终完整识别
+    document.getElementById('liveNotes').innerHTML = '<span style="color:#999;">正在整理笔记...</span>';
+    
+    try {
+      const transcript = await callDashScopeASR(audioBlob);
+      const finalText = transcript || livePartialTranscript;
+      if (finalText && finalText.trim()) {
+        document.getElementById('liveTranscript').innerHTML = '<span class="live-final">' + escapeHtml(finalText) + '</span>';
+        generateLiveNotes(finalText);
+      } else {
+        document.getElementById('liveTranscript').innerHTML = '<span style="color:#e74c3c;">❌ 未能识别到语音内容，请确保录音清晰</span>';
+      }
+    } catch (e) {
+      if (livePartialTranscript && livePartialTranscript.trim()) {
+        document.getElementById('liveTranscript').innerHTML = '<span class="live-final">' + escapeHtml(livePartialTranscript) + '</span>';
+        generateLiveNotes(livePartialTranscript);
+      } else {
+        document.getElementById('liveTranscript').innerHTML = '<span style="color:#e74c3c;">❌ 语音识别失败：' + escapeHtml(e.message) + '</span>';
+      }
+    }
+  };
+  
+  // 每 5 秒产生一个音频片段，用于近实时识别
+  mediaRecorder.start(5000);
+  isRecording = true;
+  useFallbackMode = true;
+  
+  document.getElementById('liveTranscript').innerHTML = '<span style="color:#27ae60;font-size:15px;">🎙️ 正在录音中...请开始说话</span><br><span style="color:#666;font-size:13px;">实时转写中，文字将随语音逐步显示...</span>';
+  document.getElementById('liveNotes').innerHTML = '<span style="color:#999;">录音结束后自动整理笔记...</span>';
+  document.getElementById('recStartBtn').style.background = '#c0392b';
+  document.getElementById('recStartBtn').textContent = '⏹';
+  document.getElementById('recStatusDot').style.display = '';
+  document.getElementById('recStatusDot').classList.add('rec-pulse');
+  
+  recStartTime = Date.now();
+  document.getElementById('recTimer').textContent = '00:00';
+  recTimerInterval = setInterval(() => {
+    const elapsed = Math.floor((Date.now() - recStartTime) / 1000);
+    const m = String(Math.floor(elapsed / 60)).padStart(2, '0');
+    const s = String(elapsed % 60).padStart(2, '0');
+    document.getElementById('recTimer').textContent = m + ':' + s;
+  }, 1000);
+}
+
+// 节流触发近实时识别（录音中降级模式）
+function scheduleLiveRecognition() {
+  if (liveRecognitionTimer) clearTimeout(liveRecognitionTimer);
+  liveRecognitionTimer = setTimeout(() => {
+    doLiveRecognition();
+  }, 2000); // 等 2 秒让音频积累一些
+}
+
+async function doLiveRecognition() {
+  if (!isRecording || audioChunks.length === 0) return;
+  
+  if (isRecognizingLive) {
+    pendingLiveRecognition = true;
+    return;
+  }
+  
+  isRecognizingLive = true;
+  const blob = new Blob(audioChunks, { type: mediaRecorder.mimeType || 'audio/webm' });
+  
+  if (blob.size < 1000) {
+    isRecognizingLive = false;
+    return;
+  }
+  
+  // 显示"识别中"状态
+  const el = document.getElementById('liveTranscript');
+  const prevText = livePartialTranscript ? '<span class="live-partial">' + escapeHtml(livePartialTranscript) + '</span>' : '';
+  el.innerHTML = prevText + '<span class="live-recognizing"> ⏳ 识别中...</span>';
+  
+  try {
+    const transcript = await callDashScopeASR(blob);
+    if (transcript && transcript.trim()) {
+      livePartialTranscript = transcript;
+      if (isRecording) {
+        el.innerHTML = '<span class="live-partial">' + escapeHtml(transcript) + '</span><span class="live-recognizing"> 🎤 聆听中...</span>';
+        el.scrollTop = el.scrollHeight;
+      }
+    }
+  } catch(e) {
+    console.error('实时识别错误:', e);
+    if (isRecording) {
+      el.innerHTML = (prevText ? prevText : '<span style="color:#e67e22;">⚠️ 识别出错：</span>') +
+        '<span style="color:#e74c3c;">' + escapeHtml(e.message) + '</span><br>' +
+        '<span style="color:#888;font-size:12px;">录音继续，稍后将重试...</span>';
+      el.scrollTop = el.scrollHeight;
+    }
+  }
+  
+  isRecognizingLive = false;
+  
+  // 如果有排队的识别请求，继续处理
+  if (pendingLiveRecognition && isRecording) {
+    pendingLiveRecognition = false;
+    doLiveRecognition();
+  }
+}
+
+function stopLiveRecord() {
+  isRecording = false;
+  
+  // 如果是 Web Speech API 模式
+  if (window._currentRecognition) {
+    try {
+      window._currentRecognition.stop();
+    } catch (e) {
+      // 忽略停止失败
+    }
+    
+    // 获取最终转写结果
+    const finalTranscript = window._getFinalTranscript ? window._getFinalTranscript() : '';
+    
+    clearInterval(recTimerInterval);
+    document.getElementById('recStartBtn').style.background = '#7A5C42';
+    document.getElementById('recStartBtn').textContent = '🎤';
+    document.getElementById('recStatusDot').style.display = 'none';
+    document.getElementById('recStatusDot').classList.remove('rec-pulse');
+    
+    // 清理引用
+    window._currentRecognition = null;
+    window._getFinalTranscript = null;
+    
+    if (finalTranscript && finalTranscript.trim()) {
+      // 更新显示
+      document.getElementById('liveTranscript').innerHTML = '<span class="live-final">' + escapeHtml(finalTranscript) + '</span>';
+      // 自动生成笔记
+      generateLiveNotes(finalTranscript);
+    } else {
+      document.getElementById('liveTranscript').innerHTML = '<span style="color:#e74c3c;">❌ 未检测到语音内容，请确保麦克风正常工作并清晰说话</span>';
+    }
+    return;
+  }
+  
+  // MediaRecorder 降级模式
+  if (mediaRecorder && mediaRecorder.state !== 'inactive') {
+    try { mediaRecorder.stop(); } catch(e) {}
+  }
+  clearInterval(recTimerInterval);
+  
+  document.getElementById('recStartBtn').style.background = '#7A5C42';
+  document.getElementById('recStartBtn').textContent = '🎤';
+  document.getElementById('recStatusDot').style.display = 'none';
+  document.getElementById('recStatusDot').classList.remove('rec-pulse');
+}
+
+async function generateLiveNotes(text) {
+  if (!text.trim()) return;
+  document.getElementById('liveNotes').innerHTML = '<span style="color:#999;">AI 正在整理笔记...</span>';
+  const result = await callQwen([
+    { role: 'system', content: '你是一个学习笔记整理助手。根据以下语音转写的文字内容，整理出一份清晰的笔记。要求：\n1. 提取关键要点\n2. 按主题分段\n3. 用编号和缩进展示层级\n4. 标注重要概念\n5. 忽略口语化的语气词和重复内容' },
+    { role: 'user', content: `请根据以下内容整理笔记：\n${text}` }
+  ]);
+  if (result) {
+    document.getElementById('liveNotes').innerHTML = formatAiReply(result);
+    document.getElementById('liveNotes').contentEditable = 'true';
+    document.getElementById('liveNotes').style.border = '1px dashed #E8DDD0';
+    document.getElementById('liveNotes').style.padding = '8px';
+    document.getElementById('liveNotes').style.borderRadius = '6px';
+    document.getElementById('liveNotes').style.outline = 'none';
+  }
+}
+
+// === 上传文件模式 ===
+let selectedAudioFile = null;
+
+function handleAudioFileSelect(e) {
+  const file = e.target.files[0];
+  if (!file) return;
+  selectedAudioFile = file;
+  const url = URL.createObjectURL(file);
+  document.getElementById('audioPlayer').src = url;
+  document.getElementById('uploadPlayerCard').style.display = '';
+  document.getElementById('uploadResult').innerHTML = '';
+  // 自动开始识别
+  processUploadedAudio();
+}
+
+async function processUploadedAudio() {
+  const player = document.getElementById('audioPlayer');
+  if (!player.src && !selectedAudioFile) { showToast('请先选择音频文件'); return; }
+  
+  document.getElementById('audioProgress').style.display = '';
+  document.getElementById('audioProgressText').textContent = '正在读取音频文件...';
+  document.getElementById('audioProgressFill').style.width = '20%';
+  
+  try {
+    // 读取音频文件为 blob
+    let audioBlob;
+    if (selectedAudioFile) {
+      audioBlob = selectedAudioFile;
+    } else {
+      const response = await fetch(player.src);
+      audioBlob = await response.blob();
+    }
+    
+    document.getElementById('audioProgressText').textContent = '正在使用 AI 识别语音...';
+    document.getElementById('audioProgressFill').style.width = '50%';
+    
+    const transcript = await callDashScopeASR(audioBlob);
+    
+    if (!transcript) {
+      document.getElementById('audioProgress').style.display = 'none';
+      showToast('未能识别到语音内容，请确保音频清晰');
+      return;
+    }
+    
+    document.getElementById('audioProgressText').textContent = '识别完成（' + transcript.length + ' 字），正在生成思维导图和笔记...';
+    document.getElementById('audioProgressFill').style.width = '70%';
+    
+    // 同时生成思维导图和笔记（使用通义千问）
+    const [mindmap, notes] = await Promise.all([
+      callQwen([
+        { role: 'system', content: '你是一个专业的思维导图生成助手。请根据用户提供的文本内容，生成结构清晰的思维导图，使用 Markdown 缩进层级格式。要求：1. 提炼核心主题作为根节点 2. 按逻辑关系分层 3. 每层节点简洁精炼（不超过15字） 4. 层次分明、重点突出' },
+        { role: 'user', content: `请根据以下内容生成思维导图（Markdown 缩进格式）：\n\n${transcript}` }
+      ]),
+      callQwen([
+        { role: 'system', content: '你是一个专业的学习笔记整理助手。请根据用户提供的文本内容，生成一份结构清晰、重点突出的笔记摘要。要求：1. 提取核心要点 2. 按主题分段 3. 用编号列表展示 4. 标注关键概念和重要术语' },
+        { role: 'user', content: `请根据以下内容生成笔记摘要：\n\n${transcript}` }
+      ])
+    ]);
+    
+    document.getElementById('audioProgressFill').style.width = '100%';
+    document.getElementById('audioProgress').style.display = 'none';
+    
+    let html = '<div class="card"><h3 style="margin-bottom:8px;">📝 识别原文</h3><div style="color:#555;line-height:1.8;white-space:pre-wrap;">' + escapeHtml(transcript) + '</div></div>';
+    if (mindmap) {
+      html += `<div class="card"><h3 style="margin-bottom:12px;">🧠 思维导图</h3><div style="background:#FFF8F0;border-radius:8px;padding:16px;white-space:pre-wrap;font-size:14px;line-height:2;font-family:monospace;">${escapeHtml(mindmap)}</div></div>`;
+    }
+    if (notes) {
+      html += `<div class="card"><h3 style="margin-bottom:12px;">📝 笔记摘要</h3><div contenteditable="true" style="line-height:1.8;padding:12px;border:1px solid var(--border);border-radius:8px;min-height:100px;outline:none;" onclick="this.style.borderColor='var(--accent)'" onblur="this.style.borderColor='var(--border)'">${formatAiReply(notes)}</div><p style="font-size:12px;color:#999;margin-top:8px;">💡 点击笔记内容可直接编辑修改</p></div>`;
+    }
+    document.getElementById('uploadResult').innerHTML = html;
+  } catch (e) {
+    document.getElementById('audioProgress').style.display = 'none';
+    showToast('处理失败：' + e.message);
+  }
+}
+
+// ========== AI Chat (白糕) ==========
+function toggleAiChat() {
+  const win = document.getElementById('aiChatWindow');
+  const cat = document.getElementById('aiCatButton');
+  win.classList.toggle('active');
+  cat.classList.toggle('active');
+}
+
+function clearAiChat() {
+  document.getElementById('aiChatBody').innerHTML = '<div class="ai-msg assistant">嗨～我是白糕 🐱 不管是学习上的问题还是想随便聊聊，都可以找我呀！</div>';
+  aiChatHistory = [];
+  currentViewingQuestion = null;
+  updateChatContextBar();
+}
+
+function askBaigaoAboutQuestion(qIndex) {
+  if (!currentExam || !currentExam.questions[qIndex]) { showToast('找不到题目信息'); return; }
+  
+  const q = currentExam.questions[qIndex];
+  currentViewingQuestion = { index: qIndex, question: q };
+  
+  const win = document.getElementById('aiChatWindow');
+  const cat = document.getElementById('aiCatButton');
+  win.classList.add('active');
+  cat.classList.add('active');
+  
+  updateChatContextBar();
+  
+  let questionText = `第${qIndex + 1}题 [${q.type}]：${q.content}`;
+  if (q.type === '选择题' && q.options) questionText += '\n选项：' + q.options.join(' / ');
+  if (q.answer) questionText += '\n正确答案：' + q.answer;
+  
+  const autoMsg = '白糕，请帮我详细讲解一下这道题，用最通俗的方式解释给我听：\n' + questionText;
+  
+  const input = document.getElementById('aiChatInput');
+  input.value = autoMsg;
+  sendAiMessage();
+}
+
+function updateChatContextBar() {
+  let existingBar = document.getElementById('chatContextBar');
+  if (existingBar) existingBar.remove();
+  
+  if (currentViewingQuestion) {
+    const q = currentViewingQuestion.question;
+    const shortContent = q.content.length > 30 ? q.content.substring(0, 30) + '...' : q.content;
+    const bar = document.createElement('div');
+    bar.id = 'chatContextBar';
+    bar.className = 'chat-context-bar';
+    bar.innerHTML = `📖 当前题目：第${currentViewingQuestion.index + 1}题 - ${shortContent} <span class="ctx-close" onclick="clearQuestionContext()">✕</span>`;
+    const body = document.getElementById('aiChatBody');
+    body.parentNode.insertBefore(bar, body.nextSibling);
+  }
+}
+
+function clearQuestionContext() {
+  currentViewingQuestion = null;
+  updateChatContextBar();
+}
+
+async function sendAiMessage() {
+  const input = document.getElementById('aiChatInput');
+  const msg = input.value.trim();
+  if (!msg) return;
+  input.value = '';
+
+  const body = document.getElementById('aiChatBody');
+  body.innerHTML += '<div class="ai-msg user">' + escapeHtml(msg) + '</div>';
+  body.scrollTop = body.scrollHeight;
+
+  aiChatHistory.push({ role: 'user', content: msg });
+
+  const typingId = 'typing-' + Date.now();
+  body.innerHTML += '<div class="ai-msg assistant thinking" id="' + typingId + '">思考中...</div>';
+  body.scrollTop = body.scrollHeight;
+
+  const sendBtn = document.getElementById('aiSendBtn');
+  sendBtn.disabled = true;
+
+  try {
+    let enrichedMsg = msg;
+    if (currentViewingQuestion && currentViewingQuestion.question) {
+      const q = currentViewingQuestion.question;
+      let qCtx = `\n\n【当前屏幕上的题目】\n第${currentViewingQuestion.index + 1}题 [${q.type}]：${q.content}`;
+      if (q.type === '选择题' && q.options) qCtx += '\n选项：' + q.options.join(' / ');
+      if (q.answer) qCtx += '\n正确答案：' + q.answer;
+      qCtx += '\n【请结合这道题来回答用户的问题】';
+      enrichedMsg = msg + qCtx;
+    }
+
+    const BAIGAO_SYSTEM = `你是「白糕」，白糕平台的AI猫咪助手。你是一只聪明、可爱、偶尔有点调皮的白猫。你有两种模式：
+1. 闲聊模式：用户可以跟你聊天、吐槽、倾诉、讲笑话，你可以用轻松可爱的语气回应，偶尔用猫咪的方式表达（比如"喵～这道题确实有点难呢"），但不要每句话都加喵，自然一点。
+2. 讲题模式：用户问你学科问题、作业、考试、知识点时，你要切换成专业的学习助手，清晰准确地解答，可以分步骤讲解，用通俗易懂的语言。
+规则：
+- 用户没明确问学科问题时，默认用闲聊风格
+- 回答要简洁，不要太长，像朋友聊天一样
+- 可以适当用emoji但别太多
+- 你叫白糕，是一只白色的猫
+- 用中文回答`;
+
+    // Build messages: system + recent history (last 10) + current
+    const apiMessages = [{ role: 'system', content: BAIGAO_SYSTEM }];
+    const recentHistory = aiChatHistory.slice(0, -1).slice(-10);
+    recentHistory.forEach(h => apiMessages.push(h));
+    apiMessages.push({ role: 'user', content: enrichedMsg });
+
+    const reply = await callDeepSeek(apiMessages);
+    const typingEl = document.getElementById(typingId);
+    if (typingEl) typingEl.remove();
+
+    if (!reply) {
+      body.innerHTML += '<div class="ai-msg assistant" style="color:#c00;">抱歉，AI 暂时无法响应，请稍后重试。</div>';
+    } else {
+      aiChatHistory.push({ role: 'assistant', content: reply });
+      body.innerHTML += '<div class="ai-msg assistant">' + formatAiReply(reply) + '</div>';
+    }
+  } catch(e) {
+    const typingEl = document.getElementById(typingId);
+    if (typingEl) typingEl.remove();
+    body.innerHTML += '<div class="ai-msg assistant" style="color:#c00;">出错了：' + escapeHtml(e.message) + '</div>';
+  }
+
+  sendBtn.disabled = false;
+  body.scrollTop = body.scrollHeight;
+}
+
+function formatAiReply(text) {
+  let html = escapeHtml(text);
+  html = html.replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>');
+  html = html.replace(/\n/g, '<br>');
+  return html;
+}
+
+// ========== Utility ==========
+function escapeHtml(str) {
+  const div = document.createElement('div');
+  div.textContent = str;
+  return div.innerHTML;
+}
+
+function showToast(msg) {
+  const toast = document.createElement('div');
+  toast.className = 'toast';
+  toast.textContent = msg;
+  document.body.appendChild(toast);
+  setTimeout(() => toast.remove(), 3000);
+}
+
+function openCreatePostModal() {
+  document.getElementById('modalOverlay').classList.add('show');
+  document.getElementById('modalContent').innerHTML = `
+    <h3>发布新帖</h3>
+    <div style="margin-bottom:12px;">
+      <label>学校：</label>
+      <select id="newPostSchool">
+        ${SCHOOLS.filter(s => s.name !== '全部').map(s => `<option>${s.name}</option>`).join('')}
+      </select>
+    </div>
+    <div style="margin-bottom:12px;">
+      <input type="text" id="newPostTitle" placeholder="标题">
+    </div>
+    <div style="margin-bottom:12px;">
+      <textarea id="newPostContent" rows="5" placeholder="内容..."></textarea>
+    </div>
+    <div class="modal-actions">
+      <button class="btn" onclick="closeModal()">取消</button>
+      <button class="btn btn-primary" onclick="submitNewPost()">发布</button>
+    </div>
+  `;
+}
+
+function submitNewPost() {
+  const school = document.getElementById('newPostSchool').value;
+  const title = document.getElementById('newPostTitle').value.trim();
+  const content = document.getElementById('newPostContent').value.trim();
+  if (!title || !content) { showToast('请填写标题和内容'); return; }
+  
+  const posts = getForumPosts();
+  posts.push({
+    id: Date.now(),
+    school,
+    anonId: getMyAnonId(),
+    title,
+    content,
+    timestamp: Date.now(),
+    replies: [],
+    likes: 0
+  });
+  saveForumPosts(posts);
+  closeModal();
+  renderForumPosts();
+  showToast('发布成功');
+}
+
+function closeModal(event) {
+  if (event && event.target !== event.currentTarget) return;
+  document.getElementById('modalOverlay').classList.remove('show');
+}
+
+// ========== 个人信息 ==========
+function saveProfile() {
+  const profile = {
+    name: document.getElementById('profileName').value.trim(),
+    school: document.getElementById('profileSchool').value.trim(),
+    grade: document.getElementById('profileGrade').value.trim(),
+    interest: document.getElementById('profileInterest').value.trim(),
+    bio: document.getElementById('profileBio').value.trim()
+  };
+  localStorage.setItem('user_profile', JSON.stringify(profile));
+  showToast('个人信息已保存');
+}
+
+function loadProfile() {
+  const profile = JSON.parse(localStorage.getItem('user_profile') || '{}');
+  if (profile.name) document.getElementById('profileName').value = profile.name;
+  if (profile.school) document.getElementById('profileSchool').value = profile.school;
+  if (profile.grade) document.getElementById('profileGrade').value = profile.grade;
+  if (profile.interest) document.getElementById('profileInterest').value = profile.interest;
+  if (profile.bio) document.getElementById('profileBio').value = profile.bio;
+}
+
+function toggleAdvancedSettings() {
+  const body = document.getElementById('advancedSettingsBody');
+  const arrow = document.getElementById('advancedSettingsArrow');
+  if (body.style.display === 'none') {
+    body.style.display = '';
+    arrow.textContent = '▼';
+  } else {
+    body.style.display = 'none';
+    arrow.textContent = '▶';
+  }
+}
+
+// 开发者模式：连续点击"我的"标题5次开启
+let profileClickCount = 0;
+let profileClickTimer = null;
+document.getElementById('profileTitle').addEventListener('click', function() {
+  profileClickCount++;
+  clearTimeout(profileClickTimer);
+  profileClickTimer = setTimeout(() => { profileClickCount = 0; }, 2000);
+  if (profileClickCount >= 5) {
+    profileClickCount = 0;
+    toggleDevMode();
+  }
+});
+
+function toggleDevMode() {
+  const card = document.getElementById('devSettingsCard');
+  const isDev = localStorage.getItem('dev_mode') === 'true';
+  if (isDev) {
+    localStorage.setItem('dev_mode', 'false');
+    card.style.display = 'none';
+  } else {
+    localStorage.setItem('dev_mode', 'true');
+    card.style.display = '';
+    card.scrollIntoView({ behavior: 'smooth', block: 'center' });
+  }
+}
+
+// 初始化开发者模式状态
+if (localStorage.getItem('dev_mode') === 'true') {
+  document.getElementById('devSettingsCard').style.display = '';
+}
+
+function renderProfileExamList() {
+  const exams = JSON.parse(localStorage.getItem('saved_exams') || '[]');
+  const container = document.getElementById('profileExamList');
+  
+  if (exams.length === 0) {
+    container.innerHTML = '<p style="color:#8B7355;font-size:14px;">还没有保存的试卷，去"出题中心"生成一份吧！</p>';
+    return;
+  }
+  
+  let html = '<div style="display:flex;flex-direction:column;gap:8px;">';
+  const showExams = exams.slice(0, 5);
+  showExams.forEach((exam, idx) => {
+    const date = exam.saveTime ? new Date(exam.saveTime).toLocaleDateString('zh-CN') : '';
+    const qCount = exam.questions ? exam.questions.length : 0;
+    html += `<div style="display:flex;justify-content:space-between;align-items:center;padding:10px 12px;background:#FFF8F0;border-radius:6px;">
+      <div>
+        <span style="font-weight:600;font-size:14px;">${escapeHtml(exam.title || '未命名试卷')}</span>
+        <span style="font-size:12px;color:#8B7355;margin-left:8px;">${qCount}题 · ${date}</span>
+      </div>
+      <button class="btn" style="padding:4px 12px;font-size:12px;" onclick="switchPage('exam');switchExamTab('history');">查看</button>
+    </div>`;
+  });
+  if (exams.length > 5) {
+    html += `<p style="text-align:center;color:#8B7355;font-size:13px;">还有 ${exams.length - 5} 份试卷...</p>`;
+  }
+  html += '</div>';
+  container.innerHTML = html;
+}
+
+function clearAllData() {
+  if (!confirm('确定要清除所有数据吗？包括试卷、帖子、个人信息等。此操作不可恢复！')) return;
+  if (!confirm('再次确认：真的要清除所有数据吗？')) return;
+  const keys = ['saved_exams','forum_posts','forum_private_msgs','forum_friends','forum_friend_requests','forum_anon_id','forum_liked_posts','user_profile'];
+  keys.forEach(k => localStorage.removeItem(k));
+  showToast('所有数据已清除');
+  updateStats();
+  renderProfileExamList();
+  document.getElementById('profileName').value = '';
+  document.getElementById('profileSchool').value = '';
+  document.getElementById('profileGrade').value = '';
+  document.getElementById('profileInterest').value = '';
+  document.getElementById('profileBio').value = '';
+}
+
+function updateStats() {
+  const exams = JSON.parse(localStorage.getItem('saved_exams') || '[]');
+  const posts = getForumPosts();
+  document.getElementById('statExams').textContent = exams.length;
+  document.getElementById('statPosts').textContent = posts.length;
+  // 笔记数量（论坛帖子中有"笔记"标签的，暂用0占位）
+  const notesEl = document.getElementById('statNotes');
+  if (notesEl) notesEl.textContent = '0';
+}
+
+function exportData() {
+  const data = {
+    exams: JSON.parse(localStorage.getItem('saved_exams') || '[]'),
+    posts: getForumPosts(),
+    msgs: getPrivateMessages(),
+    friends: getFriends()
+  };
+  const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = '白糕平台数据_' + new Date().toISOString().slice(0, 10) + '.json';
+  a.click();
+}
+
+function importData(e) {
+  const file = e.target.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = function(ev) {
+    try {
+      const data = JSON.parse(ev.target.result);
+      if (data.exams) localStorage.setItem('saved_exams', JSON.stringify(data.exams));
+      if (data.posts) saveForumPosts(data.posts);
+      if (data.msgs) savePrivateMessages(data.msgs);
+      if (data.friends) saveFriends(data.friends);
+      showToast('导入成功');
+      updateStats();
+    } catch(err) {
+      showToast('导入失败，文件格式错误');
+    }
+  };
+  reader.readAsText(file);
+}
+
+// ========== Init ==========
+document.getElementById('settingBackendUrl').value = getBackendUrl();
+document.getElementById('settingApiKey').value = getApiKey();
+document.getElementById('settingDashScopeKey').value = getDashScopeApiKey();
+const savedModel = localStorage.getItem('baigao_model');
+if (savedModel) document.getElementById('settingModel').value = savedModel;
+loadProfile();
+updateStats();
+renderProfileExamList();
+
+// AI Chat window CSS
+const style = document.createElement('style');
+style.textContent = `
+  #aiCatButton { position: fixed; bottom: 30px; right: 100px; width: 56px; height: 56px; border-radius: 50%; background: #FFF8F0; border: 2px solid #7A5C42; cursor: pointer; box-shadow: 0 2px 10px rgba(0,0,0,0.1); z-index: 999; display: flex; align-items: center; justify-content: center; padding: 0; overflow: hidden; }
+  #aiCatButton:hover { transform: scale(1.1); }
+  .ai-chat-window { display: none; position: fixed; bottom: 100px; right: 30px; width: 360px; max-height: 500px; background: #fff; border: 1px solid #E8DDD0; border-radius: 16px; flex-direction: column; box-shadow: 0 4px 20px rgba(0,0,0,0.15); z-index: 1000; resize: both; overflow: hidden; min-width: 280px; min-height: 300px; }
+  .ai-chat-window.active { display: flex; }
+  .ai-chat-header { padding: 10px 16px; border-bottom: 1px solid #E8DDD0; display: flex; justify-content: space-between; align-items: center; cursor: move; user-select: none; gap: 8px; background: #FFF8F0; }
+  .ai-chat-title { font-weight: 700; font-size: 15px; }
+  .ai-chat-header button { background: none; border: none; cursor: pointer; font-size: 18px; }
+  .ai-chat-body { flex: 1; padding: 16px; overflow-y: auto; min-height: 200px; }
+  .ai-msg { padding: 8px 12px; border-radius: 12px; margin: 6px 0; max-width: 85%; font-size: 14px; line-height: 1.6; }
+  .ai-msg.user { background: #7A5C42; color: #fff; margin-left: auto; }
+  .ai-msg.assistant { background: #FFF8F0; }
+  .ai-msg.thinking { color: #999; font-style: italic; }
+  .ai-chat-input-area { display: flex; gap: 8px; padding: 12px 16px; border-top: 1px solid #E8DDD0; background: #FFF8F0; }
+  .ai-chat-input-area input { flex: 1; padding: 8px 12px; border: 1px solid #E8DDD0; border-radius: 20px; }
+  .ai-chat-input-area button { padding: 8px 16px; border-radius: 20px; background: #7A5C42; color: #fff; border: none; cursor: pointer; }
+`;
+document.head.appendChild(style);
+
+// ========== Chat Window Drag ==========
+(function() {
+  const win = document.getElementById('aiChatWindow');
+  const header = win.querySelector('.ai-chat-header');
+  let isDragging = false, startX, startY, startLeft, startTop;
+  
+  header.addEventListener('mousedown', function(e) {
+    if (e.target.tagName === 'BUTTON') return;
+    isDragging = true;
+    const rect = win.getBoundingClientRect();
+    startX = e.clientX;
+    startY = e.clientY;
+    startLeft = rect.left;
+    startTop = rect.top;
+    win.style.right = 'auto';
+    win.style.bottom = 'auto';
+    win.style.left = startLeft + 'px';
+    win.style.top = startTop + 'px';
+    e.preventDefault();
+  });
+  
+  document.addEventListener('mousemove', function(e) {
+    if (!isDragging) return;
+    const dx = e.clientX - startX;
+    const dy = e.clientY - startY;
+    win.style.left = (startLeft + dx) + 'px';
+    win.style.top = (startTop + dy) + 'px';
+  });
+  
+  document.addEventListener('mouseup', function() {
+    isDragging = false;
+  });
+})();
+
+
+function switchUploadMode(mode) {
+  document.getElementById('uploadTextMode').style.display = mode === 'text' ? '' : 'none';
+  document.getElementById('uploadAudioMode').style.display = mode === 'audio' ? '' : 'none';
+  document.getElementById('uploadTextTab').className = mode === 'text' ? 'btn btn-primary' : 'btn';
+  document.getElementById('uploadAudioTab').className = mode === 'audio' ? 'btn btn-primary' : 'btn';
+  document.getElementById('uploadResult').innerHTML = '';
+}
+
+async function handleTxtFileSelect(event) {
+  const file = event.target.files[0];
+  if (!file) return;
+  try {
+    const text = await file.text();
+    document.getElementById('directTextInput').value = text;
+    showToast('文件已加载');
+  } catch (e) {
+    showToast('读取文件失败');
+  }
+}
+
+async function generateFromText() {
+  const text = document.getElementById('directTextInput').value.trim();
+  if (!text) { showToast('请先输入或粘贴文本内容'); return; }
+  if (text.length < 20) { showToast('内容太短，请输入更多内容'); return; }
+
+  document.getElementById('uploadResult').innerHTML = '<div class="card" style="text-align:center;padding:40px;"><p style="font-size:16px;">⏳ AI 正在生成思维导图和笔记，请稍候...</p></div>';
+
+  const [mindmap, notes] = await Promise.all([
+    callDeepSeek([
+      { role: 'system', content: '你是一个专业的思维导图生成助手。请根据用户提供的文本内容，生成结构清晰的思维导图，使用 Markdown 缩进层级格式。要求：1. 提炼核心主题作为根节点 2. 按逻辑关系分层 3. 每层节点简洁精炼（不超过15字） 4. 层次分明、重点突出' },
+      { role: 'user', content: `请根据以下内容生成思维导图（Markdown 缩进格式）：\n\n${text}` }
+    ]),
+    callDeepSeek([
+      { role: 'system', content: '你是一个专业的学习笔记整理助手。请根据用户提供的文本内容，生成一份结构清晰、重点突出的笔记摘要。要求：1. 提取核心要点 2. 按主题分段 3. 用编号列表展示 4. 标注关键概念和重要术语' },
+      { role: 'user', content: `请根据以下内容生成笔记摘要：\n\n${text}` }
+    ])
+  ]);
+
+  let html = '';
+  if (mindmap) {
+    html += `<div class="card"><h3 style="margin-bottom:12px;">🧠 思维导图</h3><div style="background:#FFF8F0;border-radius:8px;padding:16px;white-space:pre-wrap;font-size:14px;line-height:2;font-family:monospace;">${escapeHtml(mindmap)}</div></div>`;
+  }
+  if (notes) {
+    html += `<div class="card"><h3 style="margin-bottom:12px;">📝 笔记摘要</h3><div contenteditable="true" style="line-height:1.8;padding:12px;border:1px solid var(--border);border-radius:8px;min-height:100px;outline:none;" onclick="this.style.borderColor='var(--accent)'" onblur="this.style.borderColor='var(--border)'">${formatAiReply(notes)}</div><p style="font-size:12px;color:#999;margin-top:8px;">💡 点击笔记内容可直接编辑修改</p></div>`;
+  }
+  if (!html) {
+    html = '<div class="card" style="color:red;">生成失败，请重试</div>';
+  }
+  document.getElementById('uploadResult').innerHTML = html;
+}
+
+
+
+// ========== 错题本 ==========
+function getWrongBook() {
+  try {
+    return JSON.parse(localStorage.getItem('wrong_questions') || '[]');
+  } catch(e) {
+    return [];
+  }
+}
+
+function saveWrongQuestion(question, userAnswer) {
+  const wrongBook = getWrongBook();
+  // 检查是否已存在（避免重复添加同一道题）
+  const exists = wrongBook.some(q => q.content === question.content && q.source === (examSourceTitle || 'unknown'));
+  if (!exists) {
+    wrongBook.push({
+      type: question.type,
+      content: question.content,
+      options: question.options || null,
+      answer: question.answer,
+      userAnswer: userAnswer,
+      source: examSourceTitle || '未命名',
+      wrongTime: new Date().toISOString()
+    });
+    localStorage.setItem('wrong_questions', JSON.stringify(wrongBook));
+  }
+}
+
+function renderWrongBook() {
+  const wrongBook = getWrongBook();
+  const container = document.getElementById('wrongBookList');
+  if (!container) return;
+  
+  if (wrongBook.length === 0) {
+    container.innerHTML = '<div class="card" style="text-align:center;color:#8B7355;padding:40px;"><div style="font-size:40px;margin-bottom:12px;">🎉</div><p>暂无错题，继续保持！</p></div>';
+    return;
+  }
+  
+  let html = '<div style="font-size:13px;color:#8B7355;margin-bottom:12px;">共 ' + wrongBook.length + ' 道错题</div>';
+  wrongBook.forEach((q, i) => {
+    const time = new Date(q.wrongTime).toLocaleString('zh-CN', {month:'2-digit', day:'2-digit', hour:'2-digit', minute:'2-digit'});
+    html += `<div class="card" style="margin-bottom:10px;padding:14px;">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
+        <span style="font-weight:600;font-size:13px;color:#7A5C42;">第${i+1}题 [${q.type}] · ${escapeHtml(q.source)}</span>
+        <div style="display:flex;align-items:center;gap:8px;">
+          <span style="font-size:11px;color:#aaa;">${time}</span>
+          <button onclick="deleteWrongQuestion(${i})" style="background:none;border:none;color:#c62828;cursor:pointer;font-size:16px;padding:2px 6px;" title="删除此题">✕</button>
+        </div>
+      </div>
+      <div style="font-size:14px;line-height:1.7;margin-bottom:8px;">${escapeHtml(q.content)}</div>
+      ${q.options ? '<div style="font-size:13px;color:#666;margin-bottom:6px;">' + q.options.map(o => escapeHtml(o)).join(' &nbsp;|&nbsp; ') + '</div>' : ''}
+      <div style="display:flex;gap:12px;font-size:13px;">
+        <span style="color:#c62828;">✗ 你的答案：${escapeHtml(q.userAnswer)}</span>
+        <span style="color:#2e7d32;">✓ 正确答案：${escapeHtml(q.answer)}</span>
+      </div>
+    </div>`;
+  });
+  container.innerHTML = html;
+}
+
+function deleteWrongQuestion(index) {
+  const wrongBook = getWrongBook();
+  if (index >= 0 && index < wrongBook.length) {
+    wrongBook.splice(index, 1);
+    localStorage.setItem('wrong_questions', JSON.stringify(wrongBook));
+    renderWrongBook();
+    showToast('已删除该错题');
+  }
+}
+
+function clearWrongBook() {
+  if (confirm('确定要清空所有错题记录吗？')) {
+    localStorage.removeItem('wrong_questions');
+    renderWrongBook();
+    showToast('错题本已清空');
+  }
+}
+
+async function retestWrongQuestions() {
+  const wrongBook = getWrongBook();
+  if (wrongBook.length === 0) { showToast('错题本为空'); return; }
+  
+  // 将错题导入为考试题目
+  examGeneratedQuestions = wrongBook.map((q, i) => ({
+    type: q.type,
+    content: q.content,
+    options: q.options,
+    answer: q.answer,
+    _index: i + 1,
+    _userAnswer: ''
+  }));
+  examTotalCount = examGeneratedQuestions.length;
+  examCurrentIndex = 0;
+  examCorrectCount = 0;
+  examAnswerStatus = new Array(examTotalCount).fill(0);
+  examSourceTitle = '错题重练';
+  
+  // 切换到答题模式
+  document.querySelectorAll('.exam-tab').forEach(t => t.classList.remove('active'));
+  document.querySelectorAll('.exam-panel').forEach(p => p.classList.remove('active'));
+  document.getElementById('examOneByOne').style.display = '';
+  document.getElementById('examLoadingAll').style.display = 'none';
+  document.getElementById('examMainView').style.display = '';
+  document.getElementById('examFinalView').style.display = 'none';
+  document.getElementById('examModeTitle').textContent = '错题重练';
+  
+  examCurrentIndex = 1;
+  renderQuestionGrid();
+  renderCurrentQuestion();
+  showToast('开始错题重练，共 ' + examTotalCount + ' 题');
+}
+</script>
+</body>
+</html>
+
