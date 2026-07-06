@@ -66,12 +66,6 @@ async def call_deepseek(messages, temperature=0.7, max_tokens=2000):
         raise Exception(data.get("error", {}).get("message", "未知错误"))
 
 
-# ========== 健康检查 ==========
-@app.get("/")
-async def root():
-    return {"status": "ok", "service": "白糕平台 API", "version": "2.0", "features": ["chat", "voice-transcription"]}
-
-
 # ========== AI 聊天（白糕猫人设）==========
 @app.post("/api/chat")
 async def chat(request: Request):
@@ -466,7 +460,7 @@ async def voice_status():
 # ========== 静态文件托管（生产环境前后端同域名）==========
 # 获取项目根目录（backend 的上级目录）
 PROJECT_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-STATIC_DIR = PROJECT_ROOT
+STATIC_DIR = "/app"
 
 # 根路径返回前端页面
 @app.get("/")
